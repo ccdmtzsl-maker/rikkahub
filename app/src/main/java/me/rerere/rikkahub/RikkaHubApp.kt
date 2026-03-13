@@ -36,6 +36,11 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.androidx.workmanager.koin.workManagerFactory
 import org.koin.core.context.startKoin
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import java.util.concurrent.TimeUnit
+import me.rerere.rikka.service.ProactiveMessageWorker
 
 private const val TAG = "RikkaHubApp"
 
@@ -79,6 +84,22 @@ class RikkaHubApp : Application() {
         incrementLaunchCount()
 
         // Composer.setDiagnosticStackTraceMode(ComposeStackTraceMode.Auto)
+        setupProactiveMessageWorker()
+    }
+
+    private fun setupProactiveMessageWorker() {
+        // 创建一个每小时重复一次的请求
+        val proactiveWorkRequest =
+            PeriodicWorkRequestBuilder<ProactiveMessageWorker>(1, TimeUnit.HOURS)
+                .build()
+
+        // 把这个任务交给系统，并保证它只有一个实例在运行
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "proactive_message_worker",
+            ExistingPeriodicWorkPolicy.KEEP, // 如果已经存在，就保持不变
+            proactiveWorkRequest
+        )
+    }
     }
 
     private fun incrementLaunchCount() {

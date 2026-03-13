@@ -158,6 +158,7 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.browser)
     implementation(libs.androidx.profileinstaller)
+    implementation(libs.work.runtime.ktx)
 
     // Compose
     implementation(libs.androidx.activity.compose)

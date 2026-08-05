@@ -272,7 +272,15 @@ class ConversationRepository(
             updateAt = conversation.updateAt.toEpochMilli(),
             assistantId = conversation.assistantId.toString(),
             chatSuggestions = JsonInstant.encodeToString(conversation.chatSuggestions),
-            isPinned = conversation.isPinned
+            isPinned = conversation.isPinned,
+
+            // ✅ 主动消息相关字段全部写回 DB
+            receiveProactiveMessages = conversation.receiveProactiveMessages,
+            lastActiveTime = conversation.lastActiveTime,
+            minProactiveInterval = conversation.minProactiveInterval,
+            maxProactiveInterval = conversation.maxProactiveInterval,
+            nextProactiveTime = conversation.nextProactiveTime,
+            proactivePrompt = conversation.proactivePrompt,
         )
     }
 
@@ -289,6 +297,14 @@ class ConversationRepository(
             assistantId = Uuid.parse(conversationEntity.assistantId),
             chatSuggestions = JsonInstant.decodeFromString(conversationEntity.chatSuggestions),
             isPinned = conversationEntity.isPinned,
+
+            // ✅ 主动消息字段从 Entity 映射到模型
+            receiveProactiveMessages = conversationEntity.receiveProactiveMessages,
+            lastActiveTime = conversationEntity.lastActiveTime,
+            minProactiveInterval = conversationEntity.minProactiveInterval,
+            maxProactiveInterval = conversationEntity.maxProactiveInterval,
+            nextProactiveTime = conversationEntity.nextProactiveTime,
+            proactivePrompt = conversationEntity.proactivePrompt,
         )
     }
 
@@ -318,6 +334,14 @@ class ConversationRepository(
             createAt = Instant.ofEpochMilli(entity.createAt),
             updateAt = Instant.ofEpochMilli(entity.updateAt),
             messageNodes = emptyList(),
+
+            // ✅ 使用 LightConversationEntity 中的快照
+            lastActiveTime = entity.lastActiveTime,
+            minProactiveInterval = entity.minProactiveInterval,
+            maxProactiveInterval = entity.maxProactiveInterval,
+            nextProactiveTime = entity.nextProactiveTime,
+            proactivePrompt = entity.proactivePrompt,
+            // receiveProactiveMessages 保持默认 false 即可（列表不需要）
         )
     }
 
@@ -370,7 +394,15 @@ class ConversationRepository(
         }
         messageNodeDAO.insertAll(entities)
     }
+    suspend fun updateLastActiveTime(conversationId: Uuid, time: Long) {
+        conversationDAO.updateLastActiveTime(conversationId.toString(), time)
+    }
+
+    suspend fun updateProactiveMessages(conversationId: Uuid, enabled: Boolean) {
+        conversationDAO.updateProactiveMessages(conversationId.toString(), enabled)
+    }
 }
+
 
 /**
  * 轻量级的会话查询结果，不包含 nodes 和 suggestions 字段
@@ -382,6 +414,11 @@ data class LightConversationEntity(
     val isPinned: Boolean,
     val createAt: Long,
     val updateAt: Long,
+    val lastActiveTime: Long = System.currentTimeMillis(),
+    val minProactiveInterval: Long = 3600000,
+    val maxProactiveInterval: Long = 10800000,
+    val nextProactiveTime: Long = 0,
+    val proactivePrompt: String = "",
 )
 
 data class ConversationPageResult(

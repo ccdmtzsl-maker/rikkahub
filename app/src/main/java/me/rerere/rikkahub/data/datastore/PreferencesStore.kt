@@ -436,6 +436,12 @@ class SettingsStore(
 }
 
 @Serializable
+enum class ProactivePromptInsertMode {
+    AT_BOTTOM,            // 对话最底部（当前行为）
+    AFTER_LAST_ASSISTANT  // 最新一轮对话后
+}
+
+@Serializable
 data class Settings(
     @Transient
     val init: Boolean = false,
@@ -479,6 +485,9 @@ data class Settings(
     val backupReminderConfig: BackupReminderConfig = BackupReminderConfig(),
     val launchCount: Int = 0,
     val sponsorAlertDismissedAt: Int = 0,
+    // 主动消息：Prompt 插入位置（全局设置）
+    val proactivePromptInsertMode: ProactivePromptInsertMode =
+        ProactivePromptInsertMode.AFTER_LAST_ASSISTANT,
 ) {
     companion object {
         // 构造一个用于初始化的settings, 但它不能用于保存，防止使用初始值存储

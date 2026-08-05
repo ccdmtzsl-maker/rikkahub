@@ -22,4 +22,16 @@ data class ConversationEntity(
     val chatSuggestions: String,
     @ColumnInfo("is_pinned", defaultValue = "0")
     val isPinned: Boolean,
+    @ColumnInfo("receive_proactive_messages", defaultValue = "0")
+    val receiveProactiveMessages: Boolean = false,
+    @ColumnInfo(name = "last_active_time", defaultValue = "0")
+    val lastActiveTime: Long = System.currentTimeMillis(),
+    @ColumnInfo(name = "min_proactive_interval", defaultValue = "3600000")
+    val minProactiveInterval: Long = 3600000,
+    @ColumnInfo(name = "max_proactive_interval", defaultValue = "10800000")
+    val maxProactiveInterval: Long = 10800000,
+    @ColumnInfo(name = "next_proactive_time", defaultValue = "0")
+    val nextProactiveTime: Long = 0,
+    @ColumnInfo(name = "proactive_prompt", defaultValue = "")
+    val proactivePrompt: String = "",
 )

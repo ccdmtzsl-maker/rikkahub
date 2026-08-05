@@ -20,13 +20,22 @@ data class Conversation(
     val messageNodes: List<MessageNode>,
     val chatSuggestions: List<String> = emptyList(),
     val isPinned: Boolean = false,
+
+    // 主动消息相关
+    val receiveProactiveMessages: Boolean = false,
+    val lastActiveTime: Long = System.currentTimeMillis(),
+    val minProactiveInterval: Long = 3600000,   // 默认 1 小时
+    val maxProactiveInterval: Long = 10800000,  // 默认 3 小时
+    val nextProactiveTime: Long = 0L,
+    val proactivePrompt: String = "",
+
     @Serializable(with = InstantSerializer::class)
     val createAt: Instant = Instant.now(),
     @Serializable(with = InstantSerializer::class)
     val updateAt: Instant = Instant.now(),
     @Transient
     val newConversation: Boolean = false
-) {
+){
     val files: List<Uri>
         get() = messageNodes
             .flatMap { node -> node.messages.flatMap { it.parts } }

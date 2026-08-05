@@ -21,17 +21,20 @@ import me.rerere.rikkahub.data.db.entity.MessageNodeEntity
 import me.rerere.rikkahub.data.db.migrations.Migration_16_17
 import me.rerere.rikkahub.data.db.migrations.Migration_8_9
 import me.rerere.rikkahub.utils.JsonInstant
+import androidx.room.DeleteColumn
+import androidx.room.migration.AutoMigrationSpec
 
 @Database(
     entities = [
         ConversationEntity::class,
+        ScheduledProactiveMessageEntity::class,   // ✅ 新增
         MemoryEntity::class,
         GenMediaEntity::class,
         MessageNodeEntity::class,
         ManagedFileEntity::class,
         FavoriteEntity::class
     ],
-    version = 17,
+    version = 21,  // 改这里
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
         AutoMigration(from = 2, to = 3),
@@ -44,6 +47,10 @@ import me.rerere.rikkahub.utils.JsonInstant
         AutoMigration(from = 10, to = 11),
         AutoMigration(from = 12, to = 13),
         AutoMigration(from = 16, to = 17, spec = Migration_16_17::class),
+        AutoMigration(from = 17, to = 18),  // 加这一行
+        AutoMigration(from = 18, to = 19),
+        AutoMigration(from = 19, to = 20, spec = Migration19To20::class),
+        AutoMigration(from = 20, to = 21),
     ]
 )
 @TypeConverters(TokenUsageConverter::class)
@@ -59,7 +66,17 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun managedFileDao(): ManagedFileDAO
 
     abstract fun favoriteDao(): FavoriteDAO
+
+    abstract fun scheduledProactiveMessageDao(): ScheduledProactiveMessageDao
 }
+
+@DeleteColumn.Entries(
+    DeleteColumn(
+        tableName = "ConversationEntity",
+        columnName = "proactive_interval"
+    )
+)
+class Migration19To20 : AutoMigrationSpec
 
 object TokenUsageConverter {
     @TypeConverter

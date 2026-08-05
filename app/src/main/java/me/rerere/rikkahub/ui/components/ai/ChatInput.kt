@@ -58,6 +58,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -142,8 +143,29 @@ import me.rerere.rikkahub.ui.context.LocalToaster
 import me.rerere.rikkahub.ui.hooks.ChatInputState
 import org.koin.compose.koinInject
 import java.io.File
-import kotlin.time.Duration.Companion.seconds
+
 import kotlin.uuid.Uuid
+import me.rerere.rikkahub.data.db.dao.ConversationDAO
+import me.rerere.rikkahub.service.ProactiveMessageScheduler
+import androidx.compose.material3.SwitchDefaults // 如果未使用可省略
+import androidx.compose.material3.Button       // 如果没用 Button 可以不导
+import androidx.compose.foundation.layout.offset
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import kotlin.math.roundToInt
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.ui.focus.onFocusChanged
+import kotlinx.coroutines.delay
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.TextRange
+import kotlin.math.min
+import kotlin.math.max
 
 enum class ExpandState {
     Collapsed, Files,
@@ -159,6 +181,7 @@ fun ChatInput(
     hazeState: HazeState,
     enableSearch: Boolean,
     onToggleSearch: (Boolean) -> Unit,
+    onUpdateConversation: (Conversation) -> Unit,  // 加这一行
     modifier: Modifier = Modifier,
     onUpdateChatModel: (Model) -> Unit,
     onUpdateAssistant: (Assistant) -> Unit,
@@ -171,6 +194,9 @@ fun ChatInput(
     val toaster = LocalToaster.current
     val assistant = settings.getCurrentAssistant()
     val hazeTintColor = MaterialTheme.colorScheme.surfaceContainerLow
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val conversationDao: ConversationDAO = koinInject()
 
     val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -187,6 +213,7 @@ fun ChatInput(
     var expand by remember { mutableStateOf(ExpandState.Collapsed) }
     var showInjectionSheet by remember { mutableStateOf(false) }
     var showCompressDialog by remember { mutableStateOf(false) }
+    var showProactiveSheet by remember { mutableStateOf(false) }
     fun dismissExpand() {
         expand = ExpandState.Collapsed
         showInjectionSheet = false
@@ -273,28 +300,31 @@ fun ChatInput(
                                 modifier = Modifier,
                             )
 
-                            // Search
-                            val enableSearchMsg = stringResource(R.string.web_search_enabled)
-                            val disableSearchMsg = stringResource(R.string.web_search_disabled)
-                            val chatModel = settings.getCurrentChatModel()
-                            SearchPickerButton(
-                                enableSearch = enableSearch,
-                                settings = settings,
-                                onToggleSearch = { enabled ->
-                                    onToggleSearch(enabled)
-                                    toaster.show(
-                                        message = if (enabled) enableSearchMsg else disableSearchMsg,
-                                        duration = 1.seconds,
-                                        type = if (enabled) {
-                                            ToastType.Success
+                            // Proactive Messages Toggle
+                            // Proactive Messages Toggle
+                            val context = LocalContext.current
+                            // 主动消息设置入口（只显示状态，点击打开底部抽屉）
+                            val proactiveEnabled = conversation.receiveProactiveMessages
+
+                            Box(
+                                modifier = Modifier.offset(y = 7.dp)   // ✅ 整个按钮一起下移
+                            ) {
+                                ActionIconButton(
+                                    onClick = { showProactiveSheet = true },
+                                ) {
+                                    Icon(
+                                        imageVector = HugeIcons.Zap,
+                                        contentDescription = "主动聊天设置",
+                                        modifier = Modifier.size(26.dp),   // ✅ 不再给 Icon 自己 offset
+                                        tint = if (proactiveEnabled) {
+                                            MaterialTheme.colorScheme.primary
                                         } else {
-                                            ToastType.Normal
+                                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                                         }
                                     )
-                                },
-                                onUpdateSearchService = onUpdateSearchService,
-                                model = chatModel,
-                            )
+                                }
+                            }
+
 
                             // Reasoning
                             val model = settings.getCurrentChatModel()
@@ -380,6 +410,13 @@ fun ChatInput(
                     }
                 }
             }
+            if (showProactiveSheet) {
+                ProactiveSettingsSheet(
+                    conversation = conversation,
+                    onUpdateConversation = onUpdateConversation,
+                    onDismiss = { showProactiveSheet = false }
+                )
+            }
 
             // Expanded content
             Box(
@@ -439,7 +476,8 @@ private fun ActionIconButton(
         color = Color.Transparent,
     ) {
         Box(
-            modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
             content()
         }
@@ -1366,6 +1404,323 @@ private fun InjectionQuickConfigSheet(
                 })
 
             Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+}
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun ProactiveSettingsSheet(
+    conversation: Conversation,
+    onUpdateConversation: (Conversation) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val conversationDao: ConversationDAO = koinInject()
+    val bringIntoViewRequester = remember { BringIntoViewRequester() }
+
+    val initialMin = conversation.minProactiveInterval
+    val initialMax = conversation.maxProactiveInterval
+
+    var enabled by remember(conversation.id, conversation.receiveProactiveMessages) {
+        mutableStateOf(conversation.receiveProactiveMessages)
+    }
+
+    // 提示词：用 TextFieldValue 才能拿到光标位置
+    var promptValue by remember(conversation.id) {
+        mutableStateOf(TextFieldValue(conversation.proactivePrompt))
+    }
+
+    var randomEnabled by remember(conversation.id, initialMin, initialMax) {
+        mutableStateOf(initialMin > 0L && initialMax > 0L && initialMin != initialMax)
+    }
+
+    var intervalMinutes by remember(conversation.id, initialMin, initialMax) {
+        val baseMs = when {
+            initialMin > 0L && initialMax > 0L -> (initialMin + initialMax) / 2
+            initialMin > 0L -> initialMin
+            initialMax > 0L -> initialMax
+            else -> 60L * 60_000L
+        }
+        mutableStateOf((baseMs / 60_000L).toInt().coerceIn(1, 360))
+    }
+
+    val intervalLabel = remember(intervalMinutes) { formatIntervalLabel(intervalMinutes) }
+
+    // 区间计算
+    fun calcInterval(baseMinutes: Int, isRandom: Boolean): Pair<Long, Long> {
+        return if (isRandom) {
+            val spread = (baseMinutes * 0.3).roundToInt().coerceAtLeast(1)
+            val minMs = (baseMinutes - spread).coerceAtLeast(1) * 60_000L
+            val maxMs = (baseMinutes + spread) * 60_000L
+            minMs to maxMs
+        } else {
+            val ms = baseMinutes * 60_000L
+            ms to ms
+        }
+    }
+
+    // 写 DB + 排闹钟 + 同步内存
+    fun saveIntervalAndSchedule(minMs: Long, maxMs: Long) {
+        scope.launch {
+            val id = conversation.id.toString()
+            conversationDao.updateProactiveIntervalRange(id = id, minInterval = minMs, maxInterval = maxMs)
+            val now = System.currentTimeMillis()
+            val nextInterval = (minMs..maxMs).random()
+            val nextTime = now + nextInterval
+            conversationDao.updateNextProactiveTime(id, nextTime)
+            ProactiveMessageScheduler.scheduleAlarm(context = context, conversationId = id, triggerTime = nextTime)
+            onUpdateConversation(conversation.copy(minProactiveInterval = minMs, maxProactiveInterval = maxMs))
+        }
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        contentWindowInsets = { WindowInsets(0.dp) },
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.9f)
+                .imePadding()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // 标题
+            Text(
+                text = "主动消息设置",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
+
+            // 启用开关
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "启用主动发消息",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Switch(
+                    checked = enabled,
+                    onCheckedChange = { isOn ->
+                        enabled = isOn
+                        scope.launch {
+                            val id = conversation.id.toString()
+                            conversationDao.updateProactiveMessages(id = id, enabled = isOn)
+                            if (isOn) {
+                                val (minMs, maxMs) = calcInterval(intervalMinutes.coerceIn(1, 360), randomEnabled)
+                                conversationDao.updateProactiveIntervalRange(id = id, minInterval = minMs, maxInterval = maxMs)
+                                val now = System.currentTimeMillis()
+                                val nextTime = now + (minMs..maxMs).random()
+                                conversationDao.updateNextProactiveTime(id, nextTime)
+                                ProactiveMessageScheduler.scheduleAlarm(context = context, conversationId = id, triggerTime = nextTime)
+                                onUpdateConversation(
+                                    conversation.copy(
+                                        receiveProactiveMessages = true,
+                                        minProactiveInterval = minMs,
+                                        maxProactiveInterval = maxMs
+                                    )
+                                )
+                            } else {
+                                ProactiveMessageScheduler.cancelAlarm(context = context, conversationId = id)
+                                onUpdateConversation(conversation.copy(receiveProactiveMessages = false))
+                            }
+                        }
+                    }
+                )
+            }
+
+            if (enabled) {
+                // 随机范围模式
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "随机范围模式",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Switch(
+                        checked = randomEnabled,
+                        onCheckedChange = { isRandom ->
+                            randomEnabled = isRandom
+                            if (!enabled) return@Switch
+                            val (minMs, maxMs) = calcInterval(intervalMinutes.coerceIn(1, 360), isRandom)
+                            saveIntervalAndSchedule(minMs, maxMs)
+                        }
+                    )
+                }
+
+                // Slider
+                Slider(
+                    value = intervalMinutes.toFloat(),
+                    onValueChange = { value ->
+                        intervalMinutes = value.roundToInt().coerceIn(1, 360)
+                    },
+                    onValueChangeFinished = {
+                        if (!enabled) return@Slider
+                        val (minMs, maxMs) = calcInterval(intervalMinutes.coerceIn(1, 360), randomEnabled)
+                        saveIntervalAndSchedule(minMs, maxMs)
+                    },
+                    valueRange = 1f..360f,
+                    colors = SliderDefaults.colors(
+                        thumbColor = MaterialTheme.colorScheme.primary,
+                        activeTrackColor = MaterialTheme.colorScheme.primary,
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .height(20.dp)
+                )
+
+                // 当前间隔标签（时间显示）
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Text(
+                        text = "当前：$intervalLabel",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                // 提示词区域
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "自定义提示词",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    // 文本框
+                    TextField(
+                        value = promptValue,
+                        onValueChange = { new ->
+                            promptValue = new
+                            scope.launch {
+                                val id = conversation.id.toString()
+                                conversationDao.updateProactivePrompt(id = id, prompt = new.text)
+                                onUpdateConversation(conversation.copy(proactivePrompt = new.text))
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .bringIntoViewRequester(bringIntoViewRequester)
+                            .onFocusChanged { state ->
+                                if (state.isFocused) {
+                                    scope.launch {
+                                        delay(200)
+                                        bringIntoViewRequester.bringIntoView()
+                                    }
+                                }
+                            },
+                        placeholder = { Text("留空则使用默认提示词") },
+                        shape = RoundedCornerShape(20.dp),
+                        colors = TextFieldDefaults.colors().copy(
+                            unfocusedIndicatorColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        ),
+                        minLines = 3,
+                        maxLines = 5,
+                    )
+
+                    // 可用变量
+                    Text(
+                        text = "可用变量",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        val placeholders = listOf(
+                            "当前时间" to "{currentTime}",
+                            "距上次回复" to "{timeSinceLastAssistantMessage}",
+                            "距上次发消息" to "{timeSinceLastUserMessage}",
+                            "电量" to "{batteryLevel}",
+                        )
+
+                        placeholders.forEach { (label, token) ->
+                            AssistChip(
+                                onClick = {
+                                    val value = promptValue
+                                    val text = value.text
+                                    val selStart = value.selection.start.coerceIn(0, text.length)
+                                    val selEnd = value.selection.end.coerceIn(0, text.length)
+                                    val rangeStart = min(selStart, selEnd)
+                                    val rangeEnd = max(selStart, selEnd)
+
+                                    val insertion = token
+                                    val newText = text.replaceRange(rangeStart, rangeEnd, insertion)
+                                    val newCursor = rangeStart + insertion.length
+
+                                    val updated = value.copy(
+                                        text = newText,
+                                        selection = TextRange(newCursor)
+                                    )
+                                    promptValue = updated
+
+                                    scope.launch {
+                                        val id = conversation.id.toString()
+                                        conversationDao.updateProactivePrompt(id = id, prompt = newText)
+                                        onUpdateConversation(conversation.copy(proactivePrompt = newText))
+                                    }
+                                },
+                                modifier = Modifier.height(24.dp),
+                                label = {
+                                    Text(
+                                        text = "$label $token",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                                    )
+                                },
+                                colors = AssistChipDefaults.assistChipColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun formatIntervalLabel(minutes: Int): String {
+    return when {
+        minutes < 60 -> "${minutes} 分钟"
+        minutes % 60 == 0 -> "${minutes / 60} 小时"
+        else -> {
+            val hours = minutes / 60
+            val remain = minutes % 60
+            "${hours} 小时 ${remain} 分钟"
         }
     }
 }

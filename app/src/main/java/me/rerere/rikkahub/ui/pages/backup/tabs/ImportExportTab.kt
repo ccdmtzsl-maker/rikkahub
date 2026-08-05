@@ -212,7 +212,8 @@ fun ImportExportTab(
                     onClick = if (!isRestoring) {
                         {
                             importType = "local"
-                            openDocumentLauncher.launch(arrayOf("application/zip"))
+                            // 放宽文件类型，允许选择任何文件（包括旧 Rikka 的 zip）
+                            openDocumentLauncher.launch(arrayOf("*/*"))
                         }
                     } else null,
                     headlineContent = { Text(stringResource(R.string.backup_page_local_backup_import)) },
@@ -266,7 +267,7 @@ fun ImportExportTab(
                     onClick = if (!isRestoring) {
                         {
                             importType = "cherry"
-                            openDocumentLauncher.launch(arrayOf("application/zip"))
+                            openDocumentLauncher.launch(arrayOf("*/*"))
                         }
                     } else null,
                     headlineContent = { Text(stringResource(R.string.backup_page_import_from_cherry_studio)) },

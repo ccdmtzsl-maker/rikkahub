@@ -83,6 +83,8 @@ import java.time.Instant
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.uuid.Uuid
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
 
 private const val TAG = "ChatService"
 
@@ -256,8 +258,10 @@ class ChatService(
 
     // ---- 初始化对话 ----
 
-    suspend fun initializeConversation(conversationId: Uuid) {
-        getOrCreateSession(conversationId) // 确保 session 存在
+    suspend fun initializeConversation(conversationId: Uuid, forceRefresh: Boolean = false) {
+        val session = getOrCreateSession(conversationId)
+
+        // 如果强制刷新，或者是新会话，从数据库加载
         val conversation = conversationRepo.getConversationById(conversationId)
         if (conversation != null) {
             updateConversation(conversationId, conversation)
@@ -274,7 +278,6 @@ class ChatService(
             updateConversation(conversationId, newConversation)
         }
     }
-
     // ---- 发送消息 ----
 
     fun sendMessage(conversationId: Uuid, content: List<UIMessagePart>, answer: Boolean = true) {
@@ -296,6 +299,8 @@ class ChatService(
                     ).toMessageNode(),
                 )
                 saveConversation(conversationId, newConversation)
+                // 更新最后活跃时间
+                conversationRepo.updateLastActiveTime(conversationId, System.currentTimeMillis())
 
                 // 开始补全
                 if (answer) {
@@ -437,6 +442,77 @@ class ChatService(
 
     // ---- 处理消息补全 ----
 
+    /**
+     * 主动消息专用：复用和前台聊天相同的上下文/模板/世界书，但不走工具、不改会话，只返回一条 AI 消息。
+     *
+     * 关键点：
+     * 1. 会话、助手：按 conversation.assistantId 取；
+     * 2. 模型：用「把 assistantId 改成该会话助手」之后的 settings 来选；
+     * 3. 不修改全局 SettingsStore（不会把当前 UI 的助手切走）。
+     */
+    suspend fun generateProactiveReply(
+        conversationId: Uuid,
+        extraPrompt: String
+    ): UIMessage? {
+        // ① 拿一份当前设置（这是 Settings 数据类的快照）
+        val settingsRaw = settingsStore.settingsFlow.first()
+
+        // ② 从仓库读这条会话的完整数据（不依赖 UI 当前在哪个会话）
+        val conversation = conversationRepo.getConversationById(conversationId)
+            ?: return null
+
+        // ③ 用会话绑定的 assistantId 找到对应助手
+        val assistantFromConversation = settingsRaw.assistants
+            .firstOrNull { it.id == conversation.assistantId }
+
+        // 如果找不到（比如备份里 assistantId 异常），退回当前助手兜底
+        val assistant = assistantFromConversation ?: settingsRaw.getCurrentAssistant()
+
+        // ④ 构造一份“针对这个助手的本地 settings 副本”
+        //    不改 SettingsStore，只是把这份快照里的 assistantId 换成我们要用的助手
+        val settingsForAssistant = settingsRaw.copy(assistantId = assistant.id)
+
+        // ⑤ 用这份副本来选模型（逻辑和前台聊天一致，只是 assistantId 不同）
+        val model = settingsForAssistant.getCurrentChatModel() ?: return null
+
+        val baseMessages = conversation.currentMessages
+
+// 老版本逻辑：把 Prompt 当成一条 user 消息，直接追加在最底部
+        val messagesWithPrompt = baseMessages + UIMessage.user(extraPrompt)
+
+        val memories = if (assistant.useGlobalMemory) {
+            memoryRepository.getGlobalMemories()
+        } else {
+            memoryRepository.getMemoriesOfAssistant(assistant.id.toString())
+        }
+
+        var generatedMessage: UIMessage? = null
+
+        return runCatching {
+            generationHandler.generateText(
+                settings = settingsForAssistant,   // ✅ 用“针对该助手”的 settings 副本
+                model = model,
+                messages = messagesWithPrompt,
+                assistant = assistant,
+                memories = memories,
+                inputTransformers = buildList {
+                    addAll(inputTransformers)      // TimeReminder / PromptInjection / Placeholder / 文档 / OCR
+                    add(templateTransformer)       // 模板
+                },
+                outputTransformers = outputTransformers,
+                tools = emptyList(),              // 主动消息不调用工具，避免审批/复杂流程
+            ).collect { chunk ->
+                if (chunk is GenerationChunk.Messages) {
+                    generatedMessage = chunk.messages.lastOrNull()
+                }
+            }
+            generatedMessage
+        }.getOrElse { e ->
+            addError(e, conversationId, title = context.getString(R.string.error_title_generation))
+            null
+        }
+    }
+
     private suspend fun handleMessageComplete(
         conversationId: Uuid,
         messageRange: ClosedRange<Int>? = null
@@ -546,7 +622,14 @@ class ChatService(
             Logging.log(TAG, it.stackTraceToString())
         }.onSuccess {
             val finalConversation = getConversationFlow(conversationId).value
+            // 保存最终会话
             saveConversation(conversationId, finalConversation)
+
+            // ✅ AI 被动回复完成后：更新最后活跃时间
+            conversationRepo.updateLastActiveTime(
+                conversationId,
+                System.currentTimeMillis()
+            )
 
             launchWithConversationReference(conversationId) {
                 generateTitle(conversationId, finalConversation)
@@ -1110,6 +1193,29 @@ class ChatService(
         saveConversation(conversationId, currentConversation.copy(messageNodes = updatedNodes))
     }
 
+    private fun recalcLastActiveTime(conversation: Conversation): Long {
+        // 把所有消息平铺出来
+        val allMessages = conversation.messageNodes.flatMap { it.messages }
+
+        // 只统计用户和助手消息（忽略工具、系统之类）
+        val relevant = allMessages.filter { msg ->
+            msg.role == MessageRole.USER || msg.role == MessageRole.ASSISTANT
+        }
+
+        val latest = relevant.maxByOrNull { it.createdAt }
+
+        return if (latest != null) {
+            // LocalDateTime -> Instant -> epoch millis
+            latest.createdAt
+                .toInstant(TimeZone.currentSystemDefault())
+                .toEpochMilliseconds()
+        } else {
+            // 没有任何消息了：从“现在”开始计时会比较直觉
+            System.currentTimeMillis()
+        }
+    }
+
+
     suspend fun deleteMessage(
         conversationId: Uuid,
         messageId: Uuid,
@@ -1125,7 +1231,14 @@ class ChatService(
             return
         }
 
-        saveConversation(conversationId, updatedConversation)
+        // 根据“删完后的可见消息”重算最后活跃时间
+        val newLastActive = recalcLastActiveTime(updatedConversation)
+        val finalConversation = updatedConversation.copy(
+            lastActiveTime = newLastActive,
+            updateAt = Instant.now()
+        )
+
+        saveConversation(conversationId, finalConversation)
     }
 
     suspend fun deleteMessage(

@@ -31,6 +31,9 @@
     android:theme="@style/Theme.Rikkahub"
     android:usesCleartextTraffic="true"
     tools:targetApi="33">
+    <receiver
+      android:name=".service.ProactiveAlarmReceiver"
+      android:exported="false" />
     <activity
       android:name=".RouteActivity"
       android:configChanges="keyboardHidden|orientation|screenSize"
@@ -74,6 +77,7 @@
       android:name="com.yalantis.ucrop.UCropActivity"
       android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
 
+
     <service
       android:name=".service.WebServerService"
       android:exported="false"
@@ -82,6 +86,10 @@
         android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
         android:value="local web server for LLM chat UI" />
     </service>
+    <service
+      android:name=".service.ProactiveGenerationService"
+      android:exported="false"
+      android:foregroundServiceType="dataSync" />
 
     <provider
       android:name="androidx.core.content.FileProvider"
@@ -104,6 +112,8 @@
         tools:node="remove" />
     </provider>
   </application>
+
+  <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
   <queries>
     <intent>

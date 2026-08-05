@@ -412,6 +412,15 @@ class ChatVM(
         }
     }
 
+    fun updateProactiveMessages(enabled: Boolean) {
+        viewModelScope.launch {
+            conversationRepo.updateProactiveMessages(_conversationId, enabled)
+            // 同时更新内存中的 conversation
+            val updated = conversation.value.copy(receiveProactiveMessages = enabled)
+            chatService.updateConversationState(_conversationId) { updated }
+        }
+    }
+
     private fun getDateLabel(date: LocalDate): String {
         val today = LocalDate.now()
         val yesterday = today.minusDays(1)

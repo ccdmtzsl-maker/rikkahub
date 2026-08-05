@@ -348,6 +348,9 @@ private fun ChatPageContent(
                     onCompressContext = { additionalPrompt, targetTokens, keepRecentMessages ->
                         vm.handleCompressContext(additionalPrompt, targetTokens, keepRecentMessages)
                     },
+                    onUpdateConversation = { updated ->
+                        vm.updateConversation(updated)
+                    }
                 )
             },
             containerColor = Color.Transparent,

@@ -25,6 +25,8 @@ import me.rerere.rikkahub.data.sync.S3Sync
 import me.rerere.rikkahub.utils.JsonInstant
 import me.rerere.rikkahub.utils.UiState
 import java.io.File
+import me.rerere.rikkahub.data.db.dao.ConversationDAO
+import android.database.sqlite.SQLiteException
 
 private const val TAG = "BackupVM"
 
@@ -32,6 +34,7 @@ class BackupVM(
     private val settingsStore: SettingsStore,
     private val webDavSync: WebDavSync,
     private val s3Sync: S3Sync,
+    private val conversationDao: ConversationDAO,   // ← 新增
 ) : ViewModel() {
     val settings = settingsStore.settingsFlow.stateIn(
         scope = viewModelScope,
@@ -81,6 +84,7 @@ class BackupVM(
 
     suspend fun restore(item: WebDavBackupItem) {
         webDavSync.restore(config = settings.value.webDavConfig, item = item)
+        resetProactiveAfterRestore()
     }
 
     suspend fun deleteWebDavBackupFile(item: WebDavBackupItem) {
@@ -95,6 +99,7 @@ class BackupVM(
 
     suspend fun restoreFromLocalFile(file: File) {
         webDavSync.restoreFromLocalFile(file, settings.value.webDavConfig)
+        resetProactiveAfterRestore()
     }
 
     fun restoreFromChatBox(file: File) {
@@ -220,6 +225,7 @@ class BackupVM(
 
     suspend fun restoreFromS3(item: S3BackupItem) {
         s3Sync.restoreFromS3(config = settings.value.s3Config, item = item)
+        resetProactiveAfterRestore()
     }
 
     suspend fun deleteS3BackupFile(item: S3BackupItem) {
@@ -233,6 +239,27 @@ class BackupVM(
                     lastBackupTime = System.currentTimeMillis()
                 )
             )
+        }
+    }
+    private suspend fun resetProactiveAfterRestore() {
+        val now = System.currentTimeMillis()
+        try {
+            conversationDao.resetAllProactiveState(now)
+            Log.i(TAG, "resetProactiveAfterRestore: reset all conversations at $now")
+        } catch (e: Exception) {
+            if (e is SQLiteException &&
+                e.message?.contains("no such column: last_active_time") == true
+            ) {
+                // 旧版本备份的数据库还没有主动消息相关字段
+                // 等下次启动时 Room 的迁移会自动创建列并填默认值，这里就不强行重置了
+                Log.w(
+                    TAG,
+                    "resetProactiveAfterRestore: last_active_time column missing in restored DB " +
+                        "(old backup), will be created by migrations on next start, skip reset."
+                )
+            } else {
+                Log.e(TAG, "resetProactiveAfterRestore failed", e)
+            }
         }
     }
 }

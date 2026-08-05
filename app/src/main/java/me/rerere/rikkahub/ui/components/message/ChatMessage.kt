@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,7 +18,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
@@ -40,7 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
+
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -92,6 +92,21 @@ import me.rerere.rikkahub.utils.openUrl
 import me.rerere.rikkahub.utils.urlDecode
 import java.util.Locale
 import kotlin.time.Duration.Companion.milliseconds
+import androidx.compose.foundation.border
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.draw.blur
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.dp
 
 @Composable
 fun ChatMessage(
@@ -343,24 +358,74 @@ private fun MessagePartsBlock(
                     is UIMessagePart.Text -> {
                         SelectionContainer {
                             if (role == MessageRole.USER) {
-                                Surface(
-                                    modifier = Modifier.animateContentSize(),
-                                    shape = MaterialTheme.shapes.medium,
-                                    tonalElevation = 2.dp,
-                                    onClick = { onUserMessageClick?.invoke() },
+                                // 整体容器，添加左边距让气泡不贴边
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(start = 32.dp, end = 8.dp, top = 4.dp, bottom = 4.dp)
                                 ) {
-                                    Column(modifier = Modifier.padding(8.dp)) {
-                                        MarkdownBlock(
-                                            content = part.text.replaceRegexes(
-                                                assistant = assistant,
-                                                scope = AssistantAffectScope.USER,
-                                                visual = true,
-                                            ),
-                                            onClickCitation = handleClickCitation
+                                    // 内部 Box，尺寸由气泡决定
+                                    Box(
+                                        modifier = Modifier.align(Alignment.CenterEnd) // 靠右对齐
+                                    ) {
+                                        // 主内容气泡（半透明粉色毛玻璃）—— 先画在底层
+                                        Surface(
+                                            modifier = Modifier
+                                                .animateContentSize()
+                                                .offset(x = 0.dp, y = 0.dp),
+                                            shape = RoundedCornerShape(4.dp),  // 改成微圆角，尖尖的
+                                            tonalElevation = 0.dp,
+                                            color = Color(0xFFFFF1F6).copy(alpha = 0.7f),
+                                            shadowElevation = 0.dp,
+                                            onClick = { onUserMessageClick?.invoke() },
+                                        ) {
+                                            // 内容区域，加大内边距确保文字不贴边
+                                            Column(
+                                                modifier = Modifier.padding(
+                                                    start = 8.dp,   // 左边距减小，内容左移
+                                                    top = 10.dp,
+                                                    end = 20.dp,    // 右边距保持
+                                                    bottom = 10.dp
+                                                )
+
+                                            ) {
+                                                MarkdownBlock(
+                                                    content = part.text.replaceRegexes(
+                                                        assistant = assistant,
+                                                        scope = AssistantAffectScope.USER,
+                                                        visual = true,
+                                                    ),
+                                                    onClickCitation = handleClickCitation
+                                                )
+                                            }
+                                        }
+
+                                        // 黑色边框1：向左下偏移 (x负, y正)
+                                        Box(
+                                            modifier = Modifier
+                                                .matchParentSize()
+                                                .offset(x = (-2).dp, y = 2.dp)
+                                                .border(
+                                                    width = 1.dp,
+                                                    color = Color(0xFF554040),
+                                                    shape = RoundedCornerShape(4.dp)  // 保持一致
+                                                )
+                                        )
+                                        // 黑色边框2：向右上偏移 (x正, y负)
+                                        Box(
+                                            modifier = Modifier
+                                                .matchParentSize()
+                                                .offset(x = 2.dp, y = (-2).dp)
+                                                .border(
+                                                    width = 1.dp,
+                                                    color = Color(0xFF554040),
+                                                    shape = RoundedCornerShape(4.dp)  // 保持一致
+                                                )
                                         )
                                     }
                                 }
-                            } else {
+                            }else {
+                                // 助手这边保持原来的样式
                                 if (settings.displaySetting.showAssistantBubble) {
                                     Surface(
                                         modifier = Modifier.animateContentSize(),
@@ -386,8 +451,7 @@ private fun MessagePartsBlock(
                                             visual = true,
                                         ),
                                         onClickCitation = handleClickCitation,
-                                        modifier = Modifier
-                                            .animateContentSize()
+                                        modifier = Modifier.animateContentSize()
                                     )
                                 }
                             }
@@ -516,6 +580,8 @@ private fun MessagePartsBlock(
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                         modifier = Modifier.widthIn(max = 200.dp)
+
+
                                     )
                                 }
                             }

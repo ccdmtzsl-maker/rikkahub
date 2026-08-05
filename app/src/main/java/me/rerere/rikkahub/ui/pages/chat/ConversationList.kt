@@ -55,6 +55,7 @@ import me.rerere.rikkahub.utils.toLocalString
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlin.uuid.Uuid
+import androidx.paging.LoadState
 
 /**
  * Represents different types of items in the conversation list
@@ -105,23 +106,35 @@ fun ColumnScope.ConversationList(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         if (conversations.itemCount == 0) {
-            item {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainerLow
-                ) {
-                    Text(
-                        text = stringResource(id = R.string.chat_page_no_conversations),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(16.dp)
-                    )
+            when (val state = conversations.loadState.refresh) {
+                is LoadState.NotLoading -> {
+                    // ✅ 只有在“完全加载完且真的没有会话”时，才显示这张空卡片
+                    item {
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerLow
+                        ) {
+                            Text(
+                                text = stringResource(id = R.string.chat_page_no_conversations),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(16.dp)
+                            )
+                        }
+                    }
+                }
+                is LoadState.Loading -> {
+                    // 正在加载列表，不显示“没有会话”卡片，避免闪一下
+                }
+                is LoadState.Error -> {
+                    // 这里看你要不要加个错误提示；现在可以先空着
                 }
             }
         }
+
 
         items(
             count = conversations.itemCount,

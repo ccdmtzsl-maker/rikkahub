@@ -395,18 +395,6 @@ fun SettingDisplayPage(vm: SettingVM = koinViewModel()) {
                                     label = { Text("粉色") },
                                 )
                                 FilterChip(
-                                    selected = s.background == 0xFFDCF8C6L,
-                                    onClick = { set(UserBubbleStyle(
-                                        background = 0xFFDCF8C6, textColor = 0xFF1B5E20, borderColor = 0xFF1B5E20,
-                                        backgroundDark = 0xFF1B3A1F, textColorDark = 0xFFA5D6A7, borderColorDark = 0xFF388E3C,
-                                        cornerRadius = 16f, opacity = 1f, borderWidth = 0f, outlineOffset = 0f,
-                                        showTime = false, timePosition = UserBubbleStyle.TimePosition.INLINE,
-                                        showTail = true, tailSize = 18f,
-                                        paddingStart = 12f, paddingTop = 8f, paddingEnd = 12f, paddingBottom = 8f,
-                                    )) },
-                                    label = { Text("Telegram") },
-                                )
-                                FilterChip(
                                     selected = s.background == 0xFFF5F5F5L && s.cornerRadius == 20f,
                                     onClick = { set(UserBubbleStyle(
                                         background = 0xFFF5F5F5, textColor = 0xFF212121, borderColor = 0xFF212121,
@@ -423,7 +411,7 @@ fun SettingDisplayPage(vm: SettingVM = koinViewModel()) {
                                         backgroundDark = 0xFF0D2137, textColorDark = 0xFF90CAF9, borderColorDark = 0xFF1565C0,
                                         cornerRadius = 18f, opacity = 0.95f, borderWidth = 1f, outlineOffset = 0f,
                                         paddingStart = 12f, paddingTop = 10f, paddingEnd = 12f, paddingBottom = 10f,
-                                        showTail = true, tailSize = 6f,
+                                        showTail = false,
                                     )) },
                                     label = { Text("水泡") },
                                 )
@@ -439,6 +427,15 @@ fun SettingDisplayPage(vm: SettingVM = koinViewModel()) {
                                 label = { Text("iMessage") },
                             )
             }
+                            LabeledSlider(
+                                label = "透明度",
+                                value = s.opacity,
+                                onValueChange = { set(s.copy(opacity = it)) },
+                                valueRange = 0.2f..1f,
+                                steps = 15,
+                                valueText = { "${(it * 100).toInt()}%" },
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                            )
                             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                             Text("浅色模式", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 16.dp, top = 4.dp))
                             ColorPickerRow("背景", s.background, onValueChange = { set(s.copy(background = it)) })

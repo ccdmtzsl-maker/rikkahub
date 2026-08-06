@@ -105,16 +105,7 @@ fun CustomUserBubble(
                             )
                         }
                     }
-                    if (timeText != null && style.timePosition == UserBubbleStyle.TimePosition.INLINE) {
-                        Text(
-                            text = "  $timeText",
-                            fontSize = style.timeSize.sp,
-                            color = fg.copy(alpha = 0.45f),
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(bottom = 1.dp, end = 2.dp),
-                        )
-                    }
+
                 }
             }
             if (useOutline) {
@@ -146,14 +137,24 @@ fun CustomUserBubble(
                     colorFilter = ColorFilter.tint(bg, BlendMode.SrcIn),
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .offset(x = tailW * 0.6f, y = -(tailH * 0.05f))
+                        .offset(x = tailW * 0.8f, y = -(tailH * 0.05f))
                         .size(
-                        width = tailW * (if (style.tailStyle == UserBubbleStyle.TailStyle.IMESSAGE) 1.8f else 2.5f),
-                        height = tailH * (if (style.tailStyle == UserBubbleStyle.TailStyle.IMESSAGE) 1.8f else 2.5f),
+                        width = tailW * (if (style.tailStyle == UserBubbleStyle.TailStyle.IMESSAGE) 2.1f else 1.5f),
+                        height = tailH * (if (style.tailStyle == UserBubbleStyle.TailStyle.IMESSAGE) 2.1f else 1.5f),
                     ),
                     contentScale = ContentScale.Fit,
                 )
             }
+        if (timeText != null && style.timePosition == UserBubbleStyle.TimePosition.INLINE) {
+            Text(
+                text = timeText,
+                fontSize = style.timeSize.sp,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(bottom = style.marginVertical.dp),
+            )
+        }
         }
     }
 }

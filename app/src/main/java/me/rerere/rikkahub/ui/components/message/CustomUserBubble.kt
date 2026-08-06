@@ -1,0 +1,124 @@
+package me.rerere.rikkahub.ui.components.message
+
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.ProvideTextStyle
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlinx.datetime.LocalDateTime
+import me.rerere.rikkahub.data.datastore.UserBubbleStyle
+
+@Composable
+fun CustomUserBubble(
+    style: UserBubbleStyle,
+    isDark: Boolean,
+    createdAt: LocalDateTime?,
+    onClick: (() -> Unit)?,
+    content: @Composable () -> Unit,
+) {
+    val bg = remember(style, isDark) {
+        Color(if (isDark) style.backgroundDark else style.background)
+            .copy(alpha = style.opacity.coerceIn(0f, 1f))
+    }
+    val fg = remember(style, isDark) {
+        Color(if (isDark) style.textColorDark else style.textColor)
+    }
+    val strokeColor = remember(style, isDark) {
+        Color(if (isDark) style.borderColorDark else style.borderColor)
+    }
+    val shape = remember(style.cornerRadius) { RoundedCornerShape(style.cornerRadius.dp) }
+    val innerPadding = remember(style) {
+        PaddingValues(
+            start = style.paddingStart.dp,
+            top = style.paddingTop.dp,
+            end = style.paddingEnd.dp,
+            bottom = style.paddingBottom.dp,
+        )
+    }
+    val timeText = remember(createdAt, style.showTime, style.timeFormat) {
+        if (style.showTime && createdAt != null) formatBubbleTime(createdAt, style.timeFormat) else null
+    }
+    val useOutline = style.outlineOffset > 0f && style.borderWidth > 0f
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                start = style.marginStart.dp,
+                end = style.marginEnd.dp,
+                top = style.marginVertical.dp,
+                bottom = style.marginVertical.dp,
+            )
+    ) {
+        Box(modifier = Modifier.align(Alignment.CenterEnd)) {
+            Surface(
+                modifier = Modifier.animateContentSize(),
+                shape = shape,
+                color = bg,
+                tonalElevation = 0.dp,
+                shadowElevation = 0.dp,
+                border = if (!useOutline && style.borderWidth > 0f) {
+                    BorderStroke(style.borderWidth.dp, strokeColor)
+                } else null,
+                onClick = { onClick?.invoke() },
+            ) {
+                Column(modifier = Modifier.padding(innerPadding)) {
+                    ProvideTextStyle(LocalTextStyle.current.copy(color = fg)) {
+                        content()
+                    }
+                    if (timeText != null) {
+                        Text(
+                            text = timeText,
+                            fontSize = style.timeSize.sp,
+                            color = fg.copy(alpha = 0.55f),
+                            textAlign = TextAlign.End,
+                            modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                        )
+                    }
+                }
+            }
+            if (useOutline) {
+                val off = style.outlineOffset.dp
+                val w = style.borderWidth.dp
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .offset(x = -off, y = off)
+                        .border(w, strokeColor, shape)
+                )
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .offset(x = off, y = -off)
+                        .border(w, strokeColor, shape)
+                )
+            }
+        }
+    }
+}
+
+fun formatBubbleTime(t: LocalDateTime, format: UserBubbleStyle.TimeFormat): String {
+    fun p(v: Int) = v.toString().padStart(2, '0')
+    return when (format) {
+        UserBubbleStyle.TimeFormat.HH_MM -> "${p(t.hour)}:${p(t.minute)}"
+        UserBubbleStyle.TimeFormat.HH_MM_SS -> "${p(t.hour)}:${p(t.minute)}:${p(t.second)}"
+        UserBubbleStyle.TimeFormat.MD_HH_MM -> "${p(t.monthNumber)}-${p(t.dayOfMonth)} ${p(t.hour)}:${p(t.minute)}"
+    }
+}

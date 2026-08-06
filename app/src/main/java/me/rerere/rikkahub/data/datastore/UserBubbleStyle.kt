@@ -24,7 +24,11 @@ data class UserBubbleStyle(
     val showTime: Boolean = false,
     val timeSize: Float = 10f,
     val timeFormat: TimeFormat = TimeFormat.HH_MM,
+    val timePosition: TimePosition = TimePosition.BELOW,
 ) {
     @Serializable
     enum class TimeFormat { HH_MM, HH_MM_SS, MD_HH_MM }
+
+    @Serializable
+    enum class TimePosition { BELOW, INLINE }
 }

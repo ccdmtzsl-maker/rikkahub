@@ -1,6 +1,7 @@
 package me.rerere.rikkahub.ui.components.message
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.ProvideTextStyle
@@ -18,6 +20,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -117,6 +121,23 @@ fun CustomUserBubble(
                         .offset(x = off, y = -off)
                         .border(w, strokeColor, shape)
                 )
+            }
+            if (style.showTail) {
+                val tailSizeDp = style.tailSize.dp
+                Canvas(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = tailSizeDp, y = 4.dp)
+                        .size(tailSizeDp)
+                ) {
+                    val path = Path().apply {
+                        moveTo(0f, 0f)
+                        lineTo(size.width, 0f)
+                        lineTo(0f, size.height)
+                        close()
+                    }
+                    drawPath(path, bg)
+                }
             }
         }
     }

@@ -368,7 +368,7 @@ fun SettingDisplayPage(vm: SettingVM = koinViewModel()) {
                                 )
                             },
                         )
-                        if (displaySetting.enableCustomUserBubble) {
+                        androidx.compose.animation.AnimatedVisibility(visible = displaySetting.enableCustomUserBubble) {
                             val s = displaySetting.userBubbleStyle
                             val set: (UserBubbleStyle) -> Unit = { ns ->
                                 updateDisplaySetting(displaySetting.copy(userBubbleStyle = ns))

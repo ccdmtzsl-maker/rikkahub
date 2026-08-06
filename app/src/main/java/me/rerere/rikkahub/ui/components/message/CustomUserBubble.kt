@@ -125,25 +125,36 @@ fun CustomUserBubble(
                 )
             }
             if (style.showTail) {
-                val tailW = style.tailSize.dp
-                val tailH = style.tailSize.dp * 1.2f
                 val tailUrl = when (style.tailStyle) {
                     UserBubbleStyle.TailStyle.TRIANGLE -> TELEGRAM_TAIL_URL
                     UserBubbleStyle.TailStyle.IMESSAGE -> IMESSAGE_TAIL_URL
                 }
-                Image(
-                    painter = rememberAsyncImagePainter(tailUrl),
-                    contentDescription = null,
-                    colorFilter = ColorFilter.tint(bg, BlendMode.SrcIn),
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .offset(x = tailW * 0.8f, y = -(tailH * 0.05f))
-                        .size(
-                        width = tailW * (if (style.tailStyle == UserBubbleStyle.TailStyle.IMESSAGE) 2.1f else 1.5f),
-                        height = tailH * (if (style.tailStyle == UserBubbleStyle.TailStyle.IMESSAGE) 2.1f else 1.5f),
-                    ),
-                    contentScale = ContentScale.Fit,
-                )
+                val tailScale = if (style.tailStyle == UserBubbleStyle.TailStyle.IMESSAGE) 2.1f else 1.5f
+                val tailWidth = style.tailSize.dp * tailScale
+                val tailHeight = style.tailSize.dp * 1.2f * tailScale
+                val tailOffsetX = if (style.tailStyle == UserBubbleStyle.TailStyle.IMESSAGE) {
+                    style.tailSize.dp * 0.95f
+                } else {
+                    style.tailSize.dp * 0.65f
+                }
+                val tailOffsetY = if (style.tailStyle == UserBubbleStyle.TailStyle.IMESSAGE) {
+                    -(style.tailSize.dp * 0.08f)
+                } else {
+                    -(style.tailSize.dp * 0.04f)
+                }
+                // 不参与父布局测量；只作为贴在气泡右下角的底层图层。
+                Box(modifier = Modifier.matchParentSize()) {
+                    Image(
+                        painter = rememberAsyncImagePainter(tailUrl),
+                        contentDescription = null,
+                        colorFilter = ColorFilter.tint(bg, BlendMode.SrcIn),
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .offset(x = tailOffsetX, y = tailOffsetY)
+                            .size(width = tailWidth, height = tailHeight),
+                        contentScale = ContentScale.Fit,
+                    )
+                }
             }
         if (timeText != null && style.timePosition == UserBubbleStyle.TimePosition.INLINE) {
             Text(

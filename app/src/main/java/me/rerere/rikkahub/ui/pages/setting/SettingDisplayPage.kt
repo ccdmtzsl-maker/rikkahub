@@ -1,6 +1,7 @@
 package me.rerere.rikkahub.ui.pages.setting
 
 import android.os.Build
+import kotlinx.datetime.toLocalDateTime
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -368,6 +369,7 @@ fun SettingDisplayPage(vm: SettingVM = koinViewModel()) {
                             },
                         )
                         if (displaySetting.enableCustomUserBubble) {
+                            val previewTime = remember { kotlin.time.Clock.System.now().toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault()) }
                             val s = displaySetting.userBubbleStyle
                             val set: (UserBubbleStyle) -> Unit = { ns ->
                                 updateDisplaySetting(displaySetting.copy(userBubbleStyle = ns))
@@ -385,27 +387,27 @@ fun SettingDisplayPage(vm: SettingVM = koinViewModel()) {
                             }
                             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                             Text("浅色模式", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 16.dp, top = 8.dp))
-                            ColorPickerRow("背景", s.background) { set(s.copy(background = it)) }
-                            ColorPickerRow("文字", s.textColor) { set(s.copy(textColor = it)) }
-                            ColorPickerRow("描边", s.borderColor) { set(s.copy(borderColor = it)) }
+                            ColorPickerRow("背景", s.background, onValueChange = { set(s.copy(background = it)) })
+                            ColorPickerRow("文字", s.textColor, onValueChange = { set(s.copy(textColor = it)) })
+                            ColorPickerRow("描边", s.borderColor, onValueChange = { set(s.copy(borderColor = it)) })
                             Text("深色模式", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 16.dp, top = 8.dp))
-                            ColorPickerRow("背景", s.backgroundDark) { set(s.copy(backgroundDark = it)) }
-                            ColorPickerRow("文字", s.textColorDark) { set(s.copy(textColorDark = it)) }
-                            ColorPickerRow("描边", s.borderColorDark) { set(s.copy(borderColorDark = it)) }
+                            ColorPickerRow("背景", s.backgroundDark, onValueChange = { set(s.copy(backgroundDark = it)) })
+                            ColorPickerRow("文字", s.textColorDark, onValueChange = { set(s.copy(textColorDark = it)) })
+                            ColorPickerRow("描边", s.borderColorDark, onValueChange = { set(s.copy(borderColorDark = it)) })
                             Text("形状", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 16.dp, top = 8.dp))
-                            LabeledSlider("圆角", s.cornerRadius, { set(s.copy(cornerRadius = it)) }, 0f..32f)
-                            LabeledSlider("不透明度", s.opacity, { set(s.copy(opacity = it)) }, 0.1f..1f, unit = "%")
-                            LabeledSlider("描边粗细", s.borderWidth, { set(s.copy(borderWidth = it)) }, 0f..4f)
-                            LabeledSlider("双描边错位", s.outlineOffset, { set(s.copy(outlineOffset = it)) }, 0f..6f)
+                            LabeledSlider(label = "圆角", value = s.cornerRadius, onValueChange = { set(s.copy(cornerRadius = it)) }, valueRange = 0f..32f)
+                            LabeledSlider(label = "不透明度", value = s.opacity, onValueChange = { set(s.copy(opacity = it)) }, valueRange = 0.1f..1f, unit = "%")
+                            LabeledSlider(label = "描边粗细", value = s.borderWidth, onValueChange = { set(s.copy(borderWidth = it)) }, valueRange = 0f..4f)
+                            LabeledSlider(label = "双描边错位", value = s.outlineOffset, onValueChange = { set(s.copy(outlineOffset = it)) }, valueRange = 0f..6f)
                             Text("内边距", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 16.dp, top = 8.dp))
-                            LabeledSlider("左", s.paddingStart, { set(s.copy(paddingStart = it)) }, 0f..32f)
-                            LabeledSlider("上", s.paddingTop, { set(s.copy(paddingTop = it)) }, 0f..32f)
-                            LabeledSlider("右", s.paddingEnd, { set(s.copy(paddingEnd = it)) }, 0f..32f)
-                            LabeledSlider("下", s.paddingBottom, { set(s.copy(paddingBottom = it)) }, 0f..32f)
+                            LabeledSlider(label = "左", value = s.paddingStart, onValueChange = { set(s.copy(paddingStart = it)) }, valueRange = 0f..32f)
+                            LabeledSlider(label = "上", value = s.paddingTop, onValueChange = { set(s.copy(paddingTop = it)) }, valueRange = 0f..32f)
+                            LabeledSlider(label = "右", value = s.paddingEnd, onValueChange = { set(s.copy(paddingEnd = it)) }, valueRange = 0f..32f)
+                            LabeledSlider(label = "下", value = s.paddingBottom, onValueChange = { set(s.copy(paddingBottom = it)) }, valueRange = 0f..32f)
                             Text("外边距", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 16.dp, top = 8.dp))
-                            LabeledSlider("左（气泡宽度）", s.marginStart, { set(s.copy(marginStart = it)) }, 0f..96f)
-                            LabeledSlider("右", s.marginEnd, { set(s.copy(marginEnd = it)) }, 0f..32f)
-                            LabeledSlider("上下", s.marginVertical, { set(s.copy(marginVertical = it)) }, 0f..16f)
+                            LabeledSlider(label = "左（气泡宽度）", value = s.marginStart, onValueChange = { set(s.copy(marginStart = it)) }, valueRange = 0f..96f)
+                            LabeledSlider(label = "右", value = s.marginEnd, onValueChange = { set(s.copy(marginEnd = it)) }, valueRange = 0f..32f)
+                            LabeledSlider(label = "上下", value = s.marginVertical, onValueChange = { set(s.copy(marginVertical = it)) }, valueRange = 0f..16f)
                             ListItem(
                                 headlineContent = { Text("显示发送时间") },
                                 colors = CustomColors.listItemColors,
@@ -414,7 +416,7 @@ fun SettingDisplayPage(vm: SettingVM = koinViewModel()) {
                                 },
                             )
                             if (s.showTime) {
-                                LabeledSlider("时间字号", s.timeSize, { set(s.copy(timeSize = it)) }, 6f..20f, unit = "sp")
+                                LabeledSlider(label = "时间字号", value = s.timeSize, onValueChange = { set(s.copy(timeSize = it)) }, valueRange = 6f..20f, unit = "sp")
                                 Row(
                                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),

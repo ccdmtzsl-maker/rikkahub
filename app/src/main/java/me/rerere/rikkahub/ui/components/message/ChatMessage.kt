@@ -178,6 +178,7 @@ fun ChatMessage(
                 onToolApproval = onToolApproval,
                 onToolAnswer = onToolAnswer,
                 onUserMessageClick = if (message.role == MessageRole.USER) onEdit else null,
+                createdAt = message.createdAt,
             )
 
             message.translation?.let { translation ->
@@ -275,6 +276,7 @@ private fun MessagePartsBlock(
     onToolApproval: ((toolCallId: String, approved: Boolean, reason: String) -> Unit)? = null,
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)? = null,
     onUserMessageClick: (() -> Unit)? = null,
+    createdAt: kotlinx.datetime.LocalDateTime? = null,
 ) {
     val context = LocalContext.current
     val contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
@@ -358,70 +360,47 @@ private fun MessagePartsBlock(
                     is UIMessagePart.Text -> {
                         SelectionContainer {
                             if (role == MessageRole.USER) {
-                                // 整体容器，添加左边距让气泡不贴边
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(start = 32.dp, end = 8.dp, top = 4.dp, bottom = 4.dp)
-                                ) {
-                                    // 内部 Box，尺寸由气泡决定
+                                val markdownContent: @Composable () -> Unit = {
+                                    MarkdownBlock(
+                                        content = part.text.replaceRegexes(
+                                            assistant = assistant,
+                                            scope = AssistantAffectScope.USER,
+                                            visual = true,
+                                        ),
+                                        onClickCitation = handleClickCitation
+                                    )
+                                }
+                                if (settings.displaySetting.enableCustomUserBubble) {
+                                    CustomUserBubble(
+                                        style = settings.displaySetting.userBubbleStyle,
+                                        isDark = me.rerere.rikkahub.ui.theme.LocalDarkMode.current,
+                                        createdAt = createdAt,
+                                        onClick = onUserMessageClick,
+                                        content = markdownContent,
+                                    )
+                                } else {
+                                    // 原来的粉色气泡
                                     Box(
-                                        modifier = Modifier.align(Alignment.CenterEnd) // 靠右对齐
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(start = 32.dp, end = 8.dp, top = 4.dp, bottom = 4.dp)
                                     ) {
-                                        // 主内容气泡（半透明粉色毛玻璃）—— 先画在底层
-                                        Surface(
-                                            modifier = Modifier
-                                                .animateContentSize()
-                                                .offset(x = 0.dp, y = 0.dp),
-                                            shape = RoundedCornerShape(4.dp),  // 改成微圆角，尖尖的
-                                            tonalElevation = 0.dp,
-                                            color = Color(0xFFFFF1F6).copy(alpha = 0.7f),
-                                            shadowElevation = 0.dp,
-                                            onClick = { onUserMessageClick?.invoke() },
-                                        ) {
-                                            // 内容区域，加大内边距确保文字不贴边
-                                            Column(
-                                                modifier = Modifier.padding(
-                                                    start = 8.dp,   // 左边距减小，内容左移
-                                                    top = 10.dp,
-                                                    end = 20.dp,    // 右边距保持
-                                                    bottom = 10.dp
-                                                )
-
+                                        Box(modifier = Modifier.align(Alignment.CenterEnd)) {
+                                            Surface(
+                                                modifier = Modifier.animateContentSize().offset(x = 0.dp, y = 0.dp),
+                                                shape = RoundedCornerShape(4.dp),
+                                                tonalElevation = 0.dp,
+                                                color = Color(0xFFFFF1F6).copy(alpha = 0.7f),
+                                                shadowElevation = 0.dp,
+                                                onClick = { onUserMessageClick?.invoke() },
                                             ) {
-                                                MarkdownBlock(
-                                                    content = part.text.replaceRegexes(
-                                                        assistant = assistant,
-                                                        scope = AssistantAffectScope.USER,
-                                                        visual = true,
-                                                    ),
-                                                    onClickCitation = handleClickCitation
-                                                )
+                                                Column(modifier = Modifier.padding(start = 8.dp, top = 10.dp, end = 20.dp, bottom = 10.dp)) {
+                                                    markdownContent()
+                                                }
                                             }
+                                            Box(modifier = Modifier.matchParentSize().offset(x = (-2).dp, y = 2.dp).border(width = 1.dp, color = Color(0xFF554040), shape = RoundedCornerShape(4.dp)))
+                                            Box(modifier = Modifier.matchParentSize().offset(x = 2.dp, y = (-2).dp).border(width = 1.dp, color = Color(0xFF554040), shape = RoundedCornerShape(4.dp)))
                                         }
-
-                                        // 黑色边框1：向左下偏移 (x负, y正)
-                                        Box(
-                                            modifier = Modifier
-                                                .matchParentSize()
-                                                .offset(x = (-2).dp, y = 2.dp)
-                                                .border(
-                                                    width = 1.dp,
-                                                    color = Color(0xFF554040),
-                                                    shape = RoundedCornerShape(4.dp)  // 保持一致
-                                                )
-                                        )
-                                        // 黑色边框2：向右上偏移 (x正, y负)
-                                        Box(
-                                            modifier = Modifier
-                                                .matchParentSize()
-                                                .offset(x = 2.dp, y = (-2).dp)
-                                                .border(
-                                                    width = 1.dp,
-                                                    color = Color(0xFF554040),
-                                                    shape = RoundedCornerShape(4.dp)  // 保持一致
-                                                )
-                                        )
                                     }
                                 }
                             }else {

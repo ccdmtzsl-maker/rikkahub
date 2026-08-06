@@ -438,6 +438,22 @@ fun SettingDisplayPage(vm: SettingVM = koinViewModel()) {
                                 onClick = { set(UserBubbleStyle()) },
                                 modifier = Modifier.padding(start = 8.dp),
                             ) { Text("恢复默认样式") }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                FilterChip(
+                                    selected = s.timePosition == UserBubbleStyle.TimePosition.BELOW,
+                                    onClick = { set(s.copy(timePosition = UserBubbleStyle.TimePosition.BELOW)) },
+                                    label = { Text("下方") },
+                                )
+                                FilterChip(
+                                    selected = s.timePosition == UserBubbleStyle.TimePosition.INLINE,
+                                    onClick = { set(s.copy(timePosition = UserBubbleStyle.TimePosition.INLINE)) },
+                                    label = { Text("内嵌 (Telegram)") },
+                                )
+                            }
                         }
                     }
                     Column(

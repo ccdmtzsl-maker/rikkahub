@@ -28,7 +28,10 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -100,11 +103,26 @@ fun CustomUserBubble(
                             .size(width = tailWidth, height = tailHeight)
                             .drawWithContent {
                                 val contentDrawScope = this
-                                val cutX = (size.width - tailOffsetX.toPx()).coerceIn(0f, size.width)
-                                val cutY = (size.height - tailOffsetY.toPx()).coerceIn(0f, size.height)
+                                val bubbleRight = (size.width - tailOffsetX.toPx()).coerceIn(0f, size.width)
+                                val bubbleBottom = (size.height - tailOffsetY.toPx()).coerceIn(0f, size.height)
+                                val radius = style.cornerRadius.dp.toPx().coerceAtLeast(0f)
                                 val visibleOutsideBubble = Path().apply {
-                                    addRect(Rect(cutX, 0f, size.width, size.height))
-                                    addRect(Rect(0f, cutY, size.width, size.height))
+                                    fillType = PathFillType.EvenOdd
+                                    addRect(Rect(0f, 0f, size.width, size.height))
+                                    addRoundRect(
+                                        RoundRect(
+                                            rect = Rect(
+                                                left = -size.width,
+                                                top = -size.height,
+                                                right = bubbleRight,
+                                                bottom = bubbleBottom,
+                                            ),
+                                            topLeft = CornerRadius(0f, 0f),
+                                            topRight = CornerRadius(0f, 0f),
+                                            bottomRight = CornerRadius(radius, radius),
+                                            bottomLeft = CornerRadius(0f, 0f),
+                                        )
+                                    )
                                 }
                                 clipPath(visibleOutsideBubble) {
                                     contentDrawScope.drawContent()

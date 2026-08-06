@@ -13,6 +13,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LargeFlexibleTopAppBar
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
@@ -35,7 +38,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.DisplaySetting
+import me.rerere.rikkahub.data.datastore.UserBubbleStyle
 import me.rerere.rikkahub.ui.components.nav.BackButton
+import me.rerere.rikkahub.ui.components.message.CustomUserBubble
 import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
 import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.permission.PermissionManager
@@ -44,7 +49,10 @@ import me.rerere.rikkahub.ui.components.ui.permission.rememberPermissionState
 import me.rerere.rikkahub.ui.hooks.rememberAmoledDarkMode
 import me.rerere.rikkahub.ui.hooks.rememberSharedPreferenceBoolean
 import me.rerere.rikkahub.ui.pages.setting.components.PresetThemeButtonGroup
+import me.rerere.rikkahub.ui.pages.setting.components.LabeledSlider
+import me.rerere.rikkahub.ui.pages.setting.components.ColorPickerRow
 import me.rerere.rikkahub.ui.theme.CustomColors
+import me.rerere.rikkahub.ui.theme.LocalDarkMode
 import me.rerere.rikkahub.utils.plus
 import org.koin.androidx.compose.koinViewModel
 
@@ -338,6 +346,97 @@ fun SettingDisplayPage(vm: SettingVM = koinViewModel()) {
                                 )
                             },
                         )
+                    }
+                    Column(
+                        modifier = Modifier
+                            .padding(horizontal = 8.dp)
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(MaterialTheme.colorScheme.surfaceBright)
+                    ) {
+                        ListItem(
+                            headlineContent = { Text("自定义用户气泡") },
+                            supportingContent = { Text("开启后可调节气泡配色与形状") },
+                            colors = CustomColors.listItemColors,
+                            trailingContent = {
+                                Switch(
+                                    checked = displaySetting.enableCustomUserBubble,
+                                    onCheckedChange = {
+                                        updateDisplaySetting(displaySetting.copy(enableCustomUserBubble = it))
+                                    }
+                                )
+                            },
+                        )
+                        if (displaySetting.enableCustomUserBubble) {
+                            val s = displaySetting.userBubbleStyle
+                            val set: (UserBubbleStyle) -> Unit = { ns ->
+                                updateDisplaySetting(displaySetting.copy(userBubbleStyle = ns))
+                            }
+                            // 预览
+                            CustomUserBubble(
+                                style = s,
+                                isDark = LocalDarkMode.current,
+                                createdAt = previewTime,
+                                onClick = null,
+                            ) {
+                                MarkdownBlock(
+                                    content = stringResource(R.string.setting_display_page_font_size_preview),
+                                )
+                            }
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                            Text("浅色模式", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 16.dp, top = 8.dp))
+                            ColorPickerRow("背景", s.background) { set(s.copy(background = it)) }
+                            ColorPickerRow("文字", s.textColor) { set(s.copy(textColor = it)) }
+                            ColorPickerRow("描边", s.borderColor) { set(s.copy(borderColor = it)) }
+                            Text("深色模式", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 16.dp, top = 8.dp))
+                            ColorPickerRow("背景", s.backgroundDark) { set(s.copy(backgroundDark = it)) }
+                            ColorPickerRow("文字", s.textColorDark) { set(s.copy(textColorDark = it)) }
+                            ColorPickerRow("描边", s.borderColorDark) { set(s.copy(borderColorDark = it)) }
+                            Text("形状", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 16.dp, top = 8.dp))
+                            LabeledSlider("圆角", s.cornerRadius, { set(s.copy(cornerRadius = it)) }, 0f..32f)
+                            LabeledSlider("不透明度", s.opacity, { set(s.copy(opacity = it)) }, 0.1f..1f, unit = "%")
+                            LabeledSlider("描边粗细", s.borderWidth, { set(s.copy(borderWidth = it)) }, 0f..4f)
+                            LabeledSlider("双描边错位", s.outlineOffset, { set(s.copy(outlineOffset = it)) }, 0f..6f)
+                            Text("内边距", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 16.dp, top = 8.dp))
+                            LabeledSlider("左", s.paddingStart, { set(s.copy(paddingStart = it)) }, 0f..32f)
+                            LabeledSlider("上", s.paddingTop, { set(s.copy(paddingTop = it)) }, 0f..32f)
+                            LabeledSlider("右", s.paddingEnd, { set(s.copy(paddingEnd = it)) }, 0f..32f)
+                            LabeledSlider("下", s.paddingBottom, { set(s.copy(paddingBottom = it)) }, 0f..32f)
+                            Text("外边距", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 16.dp, top = 8.dp))
+                            LabeledSlider("左（气泡宽度）", s.marginStart, { set(s.copy(marginStart = it)) }, 0f..96f)
+                            LabeledSlider("右", s.marginEnd, { set(s.copy(marginEnd = it)) }, 0f..32f)
+                            LabeledSlider("上下", s.marginVertical, { set(s.copy(marginVertical = it)) }, 0f..16f)
+                            ListItem(
+                                headlineContent = { Text("显示发送时间") },
+                                colors = CustomColors.listItemColors,
+                                trailingContent = {
+                                    Switch(checked = s.showTime, onCheckedChange = { set(s.copy(showTime = it)) })
+                                },
+                            )
+                            if (s.showTime) {
+                                LabeledSlider("时间字号", s.timeSize, { set(s.copy(timeSize = it)) }, 6f..20f, unit = "sp")
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    UserBubbleStyle.TimeFormat.entries.forEach { f ->
+                                        FilterChip(
+                                            selected = s.timeFormat == f,
+                                            onClick = { set(s.copy(timeFormat = f)) },
+                                            label = { Text(when (f) {
+                                                UserBubbleStyle.TimeFormat.HH_MM -> "12:34"
+                                                UserBubbleStyle.TimeFormat.HH_MM_SS -> "12:34:56"
+                                                UserBubbleStyle.TimeFormat.MD_HH_MM -> "08-06 12:34"
+                                            }) },
+                                        )
+                                    }
+                                }
+                            }
+                            TextButton(
+                                onClick = { set(UserBubbleStyle()) },
+                                modifier = Modifier.padding(start = 8.dp),
+                            ) { Text("恢复默认样式") }
+                        }
                     }
                     Column(
                         modifier = Modifier

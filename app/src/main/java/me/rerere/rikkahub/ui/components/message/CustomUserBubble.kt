@@ -36,6 +36,8 @@ import kotlinx.datetime.LocalDateTime
 import me.rerere.rikkahub.data.datastore.UserBubbleStyle
 import coil3.compose.rememberAsyncImagePainter
 
+private const val IMESSAGE_TAIL_URL = "https://imgbed.heliar.top/i/OE0IpZ9UDvkx2caP.webp"
+
 @Composable
 fun CustomUserBubble(
     style: UserBubbleStyle,

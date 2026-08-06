@@ -4,9 +4,11 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -61,15 +63,14 @@ fun CustomUserBubble(
     }
     val useOutline = style.outlineOffset > 0f && style.borderWidth > 0f
 
-    val tailExtra = if (style.showTail) style.tailSize.dp * 0.4f else 0.dp
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(
                 start = style.marginStart.dp,
-                end = style.marginEnd.dp + tailExtra,
+                end = style.marginEnd.dp,
                 top = style.marginVertical.dp,
-                bottom = style.marginVertical.dp + (if (style.showTail) style.tailSize.dp * 0.6f else 0.dp),
+                bottom = style.marginVertical.dp,
             )
     ) {
         Box(modifier = Modifier.align(Alignment.CenterEnd)) {
@@ -98,12 +99,16 @@ fun CustomUserBubble(
                         )
                     }
                     if (timeText != null && style.timePosition == UserBubbleStyle.TimePosition.INLINE) {
-                        Text(
-                            text = timeText,
-                            fontSize = style.timeSize.sp,
-                            color = fg.copy(alpha = 0.45f),
-                            modifier = Modifier.align(Alignment.End),
-                        )
+                        Row(
+                            modifier = Modifier.align(Alignment.End).padding(top = 1.dp),
+                            horizontalArrangement = Arrangement.End,
+                        ) {
+                            Text(
+                                text = timeText,
+                                fontSize = style.timeSize.sp,
+                                color = fg.copy(alpha = 0.45f),
+                            )
+                        }
                     }
                 }
             }
@@ -124,12 +129,12 @@ fun CustomUserBubble(
                 )
             }
             if (style.showTail) {
-                val tailW = style.tailSize.dp * 1.2f
-                val tailH = style.tailSize.dp * 1.5f
+                val tailW = style.tailSize.dp
+                val tailH = style.tailSize.dp * 1.2f
                 Canvas(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .offset(x = style.tailSize.dp * 0.3f, y = tailH * 0.4f)
+                        .padding(bottom = 2.dp)
                         .size(width = tailW, height = tailH)
                 ) {
                     val w = size.width

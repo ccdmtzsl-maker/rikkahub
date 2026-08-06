@@ -2,6 +2,7 @@ package me.rerere.rikkahub.ui.components.message
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -21,15 +22,19 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.datetime.LocalDateTime
 import me.rerere.rikkahub.data.datastore.UserBubbleStyle
+import coil3.compose.rememberAsyncImagePainter
 
 @Composable
 fun CustomUserBubble(
@@ -131,31 +136,37 @@ fun CustomUserBubble(
             if (style.showTail) {
                 val tailW = style.tailSize.dp
                 val tailH = style.tailSize.dp * 1.2f
-                Canvas(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(bottom = 2.dp)
-                        .size(width = tailW, height = tailH)
-                ) {
-                    val w = size.width
-                    val h = size.height
-                    val path = Path().apply {
-                        when (style.tailStyle) {
-                            UserBubbleStyle.TailStyle.TRIANGLE -> {
+                when (style.tailStyle) {
+                    UserBubbleStyle.TailStyle.TRIANGLE -> {
+                        Canvas(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(bottom = 2.dp)
+                                .size(width = tailW, height = tailH)
+                        ) {
+                            val w = size.width
+                            val h = size.height
+                            val path = Path().apply {
                                 moveTo(0f, 0f)
                                 lineTo(w * 0.8f, h * 0.6f)
                                 lineTo(0f, h * 0.5f)
                                 close()
                             }
-                            UserBubbleStyle.TailStyle.IMESSAGE -> {
-                                moveTo(0f, 0f)
-                                cubicTo(w * 0.05f, h * 0.5f, w * 0.5f, h * 0.7f, w * 0.85f, h)
-                                cubicTo(w * 0.4f, h * 0.85f, w * 0.15f, h * 0.6f, 0f, h * 0.35f)
-                                close()
-                            }
+                            drawPath(path, bg)
                         }
                     }
-                    drawPath(path, bg)
+                    UserBubbleStyle.TailStyle.IMESSAGE -> {
+                        Image(
+                            painter = rememberAsyncImagePainter(IMESSAGE_TAIL_URL),
+                            contentDescription = null,
+                            colorFilter = ColorFilter.tint(bg, BlendMode.SrcIn),
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .offset(x = tailW * 0.5f, y = -(tailH * 0.1f))
+                                .size(width = tailW * 1.5f, height = tailH * 1.5f),
+                            contentScale = ContentScale.Fit,
+                        )
+                    }
                 }
             }
         }

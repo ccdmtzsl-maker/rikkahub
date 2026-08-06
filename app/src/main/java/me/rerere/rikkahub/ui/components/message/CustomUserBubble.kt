@@ -23,9 +23,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Rect
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -93,7 +97,18 @@ fun CustomUserBubble(
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
                             .offset(x = tailOffsetX, y = tailOffsetY)
-                            .size(width = tailWidth, height = tailHeight),
+                            .size(width = tailWidth, height = tailHeight)
+                            .drawWithContent {
+                                val cutX = (size.width - tailOffsetX.toPx()).coerceIn(0f, size.width)
+                                val cutY = (size.height - tailOffsetY.toPx()).coerceIn(0f, size.height)
+                                val visibleOutsideBubble = Path().apply {
+                                    addRect(Rect(cutX, 0f, size.width, size.height))
+                                    addRect(Rect(0f, cutY, size.width, size.height))
+                                }
+                                clipPath(visibleOutsideBubble) {
+                                    drawContent()
+                                }
+                            },
                         contentScale = ContentScale.Fit,
                     )
                 }

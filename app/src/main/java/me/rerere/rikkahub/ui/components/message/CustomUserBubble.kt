@@ -123,12 +123,13 @@ fun CustomUserBubble(
                 )
             }
             if (style.showTail) {
-                val tailSizeDp = style.tailSize.dp
+                val tailW = style.tailSize.dp * 1.2f
+                val tailH = style.tailSize.dp * 1.5f
                 Canvas(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .offset(x = tailSizeDp * 0.8f, y = 0.dp)
-                        .size(width = tailSizeDp * 1.2f, height = tailSizeDp * 1.5f)
+                        .offset(x = style.tailSize.dp * 0.3f, y = tailH * 0.4f)
+                        .size(width = tailW, height = tailH)
                 ) {
                     val w = size.width
                     val h = size.height
@@ -136,15 +137,14 @@ fun CustomUserBubble(
                         when (style.tailStyle) {
                             UserBubbleStyle.TailStyle.TRIANGLE -> {
                                 moveTo(0f, 0f)
-                                lineTo(w, 0f)
-                                lineTo(0f, h)
+                                lineTo(w * 0.8f, h * 0.6f)
+                                lineTo(0f, h * 0.5f)
                                 close()
                             }
                             UserBubbleStyle.TailStyle.IMESSAGE -> {
-                                // iMessage curved tail: starts from bottom-left, curves out right-down, loops back
                                 moveTo(0f, 0f)
-                                cubicTo(w * 0.1f, h * 0.4f, w * 0.9f, h * 0.3f, w, h * 0.85f)
-                                cubicTo(w * 0.6f, h * 0.7f, w * 0.3f, h * 0.5f, 0f, h * 0.4f)
+                                cubicTo(w * 0.05f, h * 0.5f, w * 0.5f, h * 0.7f, w * 0.85f, h)
+                                cubicTo(w * 0.4f, h * 0.85f, w * 0.15f, h * 0.6f, 0f, h * 0.35f)
                                 close()
                             }
                         }

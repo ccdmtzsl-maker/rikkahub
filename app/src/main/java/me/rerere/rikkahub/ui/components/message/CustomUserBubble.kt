@@ -126,15 +126,28 @@ fun CustomUserBubble(
                 val tailSizeDp = style.tailSize.dp
                 Canvas(
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .offset(x = tailSizeDp, y = 4.dp)
-                        .size(tailSizeDp)
+                        .align(Alignment.BottomEnd)
+                        .offset(x = tailSizeDp * 0.8f, y = 0.dp)
+                        .size(width = tailSizeDp * 1.2f, height = tailSizeDp * 1.5f)
                 ) {
+                    val w = size.width
+                    val h = size.height
                     val path = Path().apply {
-                        moveTo(0f, 0f)
-                        lineTo(size.width, 0f)
-                        lineTo(0f, size.height)
-                        close()
+                        when (style.tailStyle) {
+                            UserBubbleStyle.TailStyle.TRIANGLE -> {
+                                moveTo(0f, 0f)
+                                lineTo(w, 0f)
+                                lineTo(0f, h)
+                                close()
+                            }
+                            UserBubbleStyle.TailStyle.IMESSAGE -> {
+                                // iMessage curved tail: starts from bottom-left, curves out right-down, loops back
+                                moveTo(0f, 0f)
+                                cubicTo(w * 0.1f, h * 0.4f, w * 0.9f, h * 0.3f, w, h * 0.85f)
+                                cubicTo(w * 0.6f, h * 0.7f, w * 0.3f, h * 0.5f, 0f, h * 0.4f)
+                                close()
+                            }
+                        }
                     }
                     drawPath(path, bg)
                 }

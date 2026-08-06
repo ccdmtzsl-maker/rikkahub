@@ -399,6 +399,17 @@ fun SettingDisplayPage(vm: SettingVM = koinViewModel()) {
                             LabeledSlider(label = "不透明度", value = s.opacity, onValueChange = { set(s.copy(opacity = it)) }, valueRange = 0.1f..1f, unit = "%")
                             LabeledSlider(label = "描边粗细", value = s.borderWidth, onValueChange = { set(s.copy(borderWidth = it)) }, valueRange = 0f..4f)
                             LabeledSlider(label = "双描边错位", value = s.outlineOffset, onValueChange = { set(s.copy(outlineOffset = it)) }, valueRange = 0f..6f)
+                            ListItem(
+                                headlineContent = { Text("小尾巴") },
+                                supportingContent = { Text("Telegram 风格的三角尖角") },
+                                colors = CustomColors.listItemColors,
+                                trailingContent = {
+                                    Switch(checked = s.showTail, onCheckedChange = { set(s.copy(showTail = it)) })
+                                },
+                            )
+                            if (s.showTail) {
+                                LabeledSlider(label = "尾巴大小", value = s.tailSize, onValueChange = { set(s.copy(tailSize = it)) }, valueRange = 4f..16f)
+                            }
                             Text("内边距", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 16.dp, top = 8.dp))
                             LabeledSlider(label = "左", value = s.paddingStart, onValueChange = { set(s.copy(paddingStart = it)) }, valueRange = 0f..32f)
                             LabeledSlider(label = "上", value = s.paddingTop, onValueChange = { set(s.copy(paddingTop = it)) }, valueRange = 0f..32f)

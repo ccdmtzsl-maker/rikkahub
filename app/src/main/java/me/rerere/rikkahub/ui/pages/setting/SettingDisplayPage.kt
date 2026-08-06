@@ -357,7 +357,7 @@ fun SettingDisplayPage(vm: SettingVM = koinViewModel()) {
                     ) {
                         ListItem(
                             headlineContent = { Text("自定义用户气泡") },
-                            supportingContent = { Text("开启后可调节气泡配色与形状") },
+                            supportingContent = { Text("开启后可选择预设样式或自定义配色") },
                             colors = CustomColors.listItemColors,
                             trailingContent = {
                                 Switch(
@@ -369,24 +369,66 @@ fun SettingDisplayPage(vm: SettingVM = koinViewModel()) {
                             },
                         )
                         if (displaySetting.enableCustomUserBubble) {
-                            val previewTime = remember { kotlin.time.Clock.System.now().toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault()) }
                             val s = displaySetting.userBubbleStyle
                             val set: (UserBubbleStyle) -> Unit = { ns ->
                                 updateDisplaySetting(displaySetting.copy(userBubbleStyle = ns))
                             }
-                            // 预览
+                            val previewTime = remember { kotlin.time.Clock.System.now().toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault()) }
                             CustomUserBubble(
                                 style = s,
                                 isDark = LocalDarkMode.current,
                                 createdAt = previewTime,
                                 onClick = null,
                             ) {
-                                MarkdownBlock(
-                                    content = stringResource(R.string.setting_display_page_font_size_preview),
+                                MarkdownBlock(content = stringResource(R.string.setting_display_page_font_size_preview))
+                            }
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                            Text("预设样式", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 16.dp, top = 8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                FilterChip(
+                                    selected = s.background == 0xFFFFF1F6L && s.cornerRadius == 4f,
+                                    onClick = { set(UserBubbleStyle()) },
+                                    label = { Text("粉色") },
+                                )
+                                FilterChip(
+                                    selected = s.background == 0xFFDCF8C6L,
+                                    onClick = { set(UserBubbleStyle(
+                                        background = 0xFFDCF8C6, textColor = 0xFF1B5E20, borderColor = 0xFF1B5E20,
+                                        backgroundDark = 0xFF1B3A1F, textColorDark = 0xFFA5D6A7, borderColorDark = 0xFF388E3C,
+                                        cornerRadius = 16f, opacity = 1f, borderWidth = 0f, outlineOffset = 0f,
+                                        showTime = true, timePosition = UserBubbleStyle.TimePosition.INLINE,
+                                        showTail = true, tailSize = 8f,
+                                        paddingStart = 12f, paddingTop = 8f, paddingEnd = 12f, paddingBottom = 8f,
+                                    )) },
+                                    label = { Text("Telegram") },
+                                )
+                                FilterChip(
+                                    selected = s.background == 0xFFF5F5F5L && s.cornerRadius == 20f,
+                                    onClick = { set(UserBubbleStyle(
+                                        background = 0xFFF5F5F5, textColor = 0xFF212121, borderColor = 0xFF212121,
+                                        backgroundDark = 0xFF2C2C2C, textColorDark = 0xFFE0E0E0, borderColorDark = 0xFF424242,
+                                        cornerRadius = 20f, opacity = 1f, borderWidth = 0f, outlineOffset = 0f,
+                                        paddingStart = 14f, paddingTop = 10f, paddingEnd = 14f, paddingBottom = 10f,
+                                    )) },
+                                    label = { Text("极简") },
+                                )
+                                FilterChip(
+                                    selected = s.background == 0xFFE3F2FDL,
+                                    onClick = { set(UserBubbleStyle(
+                                        background = 0xFFE3F2FD, textColor = 0xFF0D47A1, borderColor = 0xFF0D47A1,
+                                        backgroundDark = 0xFF0D2137, textColorDark = 0xFF90CAF9, borderColorDark = 0xFF1565C0,
+                                        cornerRadius = 18f, opacity = 0.95f, borderWidth = 1f, outlineOffset = 0f,
+                                        paddingStart = 12f, paddingTop = 10f, paddingEnd = 12f, paddingBottom = 10f,
+                                        showTail = true, tailSize = 6f,
+                                    )) },
+                                    label = { Text("水泡") },
                                 )
                             }
                             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                            Text("浅色模式", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 16.dp, top = 8.dp))
+                            Text("浅色模式", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 16.dp, top = 4.dp))
                             ColorPickerRow("背景", s.background, onValueChange = { set(s.copy(background = it)) })
                             ColorPickerRow("文字", s.textColor, onValueChange = { set(s.copy(textColor = it)) })
                             ColorPickerRow("描边", s.borderColor, onValueChange = { set(s.copy(borderColor = it)) })
@@ -394,77 +436,6 @@ fun SettingDisplayPage(vm: SettingVM = koinViewModel()) {
                             ColorPickerRow("背景", s.backgroundDark, onValueChange = { set(s.copy(backgroundDark = it)) })
                             ColorPickerRow("文字", s.textColorDark, onValueChange = { set(s.copy(textColorDark = it)) })
                             ColorPickerRow("描边", s.borderColorDark, onValueChange = { set(s.copy(borderColorDark = it)) })
-                            Text("形状", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 16.dp, top = 8.dp))
-                            LabeledSlider(label = "圆角", value = s.cornerRadius, onValueChange = { set(s.copy(cornerRadius = it)) }, valueRange = 0f..32f)
-                            LabeledSlider(label = "不透明度", value = s.opacity, onValueChange = { set(s.copy(opacity = it)) }, valueRange = 0.1f..1f, unit = "%")
-                            LabeledSlider(label = "描边粗细", value = s.borderWidth, onValueChange = { set(s.copy(borderWidth = it)) }, valueRange = 0f..4f)
-                            LabeledSlider(label = "双描边错位", value = s.outlineOffset, onValueChange = { set(s.copy(outlineOffset = it)) }, valueRange = 0f..6f)
-                            ListItem(
-                                headlineContent = { Text("小尾巴") },
-                                supportingContent = { Text("Telegram 风格的三角尖角") },
-                                colors = CustomColors.listItemColors,
-                                trailingContent = {
-                                    Switch(checked = s.showTail, onCheckedChange = { set(s.copy(showTail = it)) })
-                                },
-                            )
-                            if (s.showTail) {
-                                LabeledSlider(label = "尾巴大小", value = s.tailSize, onValueChange = { set(s.copy(tailSize = it)) }, valueRange = 4f..16f)
-                            }
-                            Text("内边距", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 16.dp, top = 8.dp))
-                            LabeledSlider(label = "左", value = s.paddingStart, onValueChange = { set(s.copy(paddingStart = it)) }, valueRange = 0f..32f)
-                            LabeledSlider(label = "上", value = s.paddingTop, onValueChange = { set(s.copy(paddingTop = it)) }, valueRange = 0f..32f)
-                            LabeledSlider(label = "右", value = s.paddingEnd, onValueChange = { set(s.copy(paddingEnd = it)) }, valueRange = 0f..32f)
-                            LabeledSlider(label = "下", value = s.paddingBottom, onValueChange = { set(s.copy(paddingBottom = it)) }, valueRange = 0f..32f)
-                            Text("外边距", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 16.dp, top = 8.dp))
-                            LabeledSlider(label = "左（气泡宽度）", value = s.marginStart, onValueChange = { set(s.copy(marginStart = it)) }, valueRange = 0f..96f)
-                            LabeledSlider(label = "右", value = s.marginEnd, onValueChange = { set(s.copy(marginEnd = it)) }, valueRange = 0f..32f)
-                            LabeledSlider(label = "上下", value = s.marginVertical, onValueChange = { set(s.copy(marginVertical = it)) }, valueRange = 0f..16f)
-                            ListItem(
-                                headlineContent = { Text("显示发送时间") },
-                                colors = CustomColors.listItemColors,
-                                trailingContent = {
-                                    Switch(checked = s.showTime, onCheckedChange = { set(s.copy(showTime = it)) })
-                                },
-                            )
-                            if (s.showTime) {
-                                LabeledSlider(label = "时间字号", value = s.timeSize, onValueChange = { set(s.copy(timeSize = it)) }, valueRange = 6f..20f, unit = "sp")
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                ) {
-                                    UserBubbleStyle.TimeFormat.entries.forEach { f ->
-                                        FilterChip(
-                                            selected = s.timeFormat == f,
-                                            onClick = { set(s.copy(timeFormat = f)) },
-                                            label = { Text(when (f) {
-                                                UserBubbleStyle.TimeFormat.HH_MM -> "12:34"
-                                                UserBubbleStyle.TimeFormat.HH_MM_SS -> "12:34:56"
-                                                UserBubbleStyle.TimeFormat.MD_HH_MM -> "08-06 12:34"
-                                            }) },
-                                        )
-                                    }
-                                }
-                            }
-                            TextButton(
-                                onClick = { set(UserBubbleStyle()) },
-                                modifier = Modifier.padding(start = 8.dp),
-                            ) { Text("恢复默认样式") }
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                FilterChip(
-                                    selected = s.timePosition == UserBubbleStyle.TimePosition.BELOW,
-                                    onClick = { set(s.copy(timePosition = UserBubbleStyle.TimePosition.BELOW)) },
-                                    label = { Text("下方") },
-                                )
-                                FilterChip(
-                                    selected = s.timePosition == UserBubbleStyle.TimePosition.INLINE,
-                                    onClick = { set(s.copy(timePosition = UserBubbleStyle.TimePosition.INLINE)) },
-                                    label = { Text("内嵌 (Telegram)") },
-                                )
-                            }
                         }
                     }
                     Column(

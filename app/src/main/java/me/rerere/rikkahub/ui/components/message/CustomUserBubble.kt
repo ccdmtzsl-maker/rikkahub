@@ -20,8 +20,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.ColorFilter
@@ -34,6 +38,7 @@ import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.datetime.LocalDateTime
@@ -73,6 +78,7 @@ fun CustomUserBubble(
         if (style.showTime && createdAt != null) formatBubbleTime(createdAt, style.timeFormat) else null
     }
     val useOutline = style.outlineOffset > 0f && style.borderWidth > 0f
+    var bubbleSize by remember { mutableStateOf(IntSize.Zero) }
 
     Box(
         modifier = Modifier
@@ -105,7 +111,11 @@ fun CustomUserBubble(
                                 val contentDrawScope = this
                                 val bubbleRight = (size.width - tailOffsetX.toPx()).coerceIn(0f, size.width)
                                 val bubbleBottom = (size.height - tailOffsetY.toPx()).coerceIn(0f, size.height)
-                                val radius = style.cornerRadius.dp.toPx().coerceAtLeast(0f)
+                                val radius = minOf(
+                                    style.cornerRadius.dp.toPx().coerceAtLeast(0f),
+                                    bubbleSize.width / 2f,
+                                    bubbleSize.height / 2f,
+                                )
                                 val visibleOutsideBubble = Path().apply {
                                     fillType = PathFillType.EvenOdd
                                     addRect(Rect(0f, 0f, size.width, size.height))
@@ -133,7 +143,9 @@ fun CustomUserBubble(
                 }
             }
             Surface(
-                modifier = Modifier.animateContentSize(),
+                modifier = Modifier
+                    .animateContentSize()
+                    .onSizeChanged { bubbleSize = it },
                 shape = shape,
                 color = bg,
                 tonalElevation = 0.dp,

@@ -83,13 +83,21 @@ fun CustomUserBubble(
                     ProvideTextStyle(LocalTextStyle.current.copy(color = fg)) {
                         content()
                     }
-                    if (timeText != null) {
+                    if (timeText != null && style.timePosition == UserBubbleStyle.TimePosition.BELOW) {
                         Text(
                             text = timeText,
                             fontSize = style.timeSize.sp,
                             color = fg.copy(alpha = 0.55f),
                             textAlign = TextAlign.End,
-                            modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                            modifier = Modifier.align(Alignment.End).padding(top = 2.dp),
+                        )
+                    }
+                    if (timeText != null && style.timePosition == UserBubbleStyle.TimePosition.INLINE) {
+                        Text(
+                            text = timeText,
+                            fontSize = style.timeSize.sp,
+                            color = fg.copy(alpha = 0.45f),
+                            modifier = Modifier.align(Alignment.End),
                         )
                     }
                 }

@@ -27,10 +27,14 @@ data class UserBubbleStyle(
     val timePosition: TimePosition = TimePosition.BELOW,
     val showTail: Boolean = false,
     val tailSize: Float = 8f,
+    val tailStyle: TailStyle = TailStyle.TRIANGLE,
 ) {
     @Serializable
     enum class TimeFormat { HH_MM, HH_MM_SS, MD_HH_MM }
 
     @Serializable
     enum class TimePosition { BELOW, INLINE }
+
+    @Serializable
+    enum class TailStyle { TRIANGLE, IMESSAGE }
 }

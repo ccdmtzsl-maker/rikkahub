@@ -34,7 +34,6 @@ import me.rerere.rikkahub.data.datastore.UserBubbleStyle
 import coil3.compose.rememberAsyncImagePainter
 
 private const val IMESSAGE_TAIL_URL = "https://imgbed.heliar.top/i/OE0IpZ9UDvkx2caP.webp"
-private const val TELEGRAM_TAIL_URL = "https://imgbed.heliar.top/i/AGUvAR0gG52bKR5Q.webp"
 
 @Composable
 fun CustomUserBubble(
@@ -79,28 +78,16 @@ fun CustomUserBubble(
             )
     ) {
         Box(modifier = Modifier.align(Alignment.CenterEnd)) {
-            if (style.showTail) {
-                val tailUrl = when (style.tailStyle) {
-                    UserBubbleStyle.TailStyle.TRIANGLE -> TELEGRAM_TAIL_URL
-                    UserBubbleStyle.TailStyle.IMESSAGE -> IMESSAGE_TAIL_URL
-                }
-                val tailScale = if (style.tailStyle == UserBubbleStyle.TailStyle.IMESSAGE) 2.1f else 1.5f
+            if (style.showTail && style.tailStyle == UserBubbleStyle.TailStyle.IMESSAGE) {
+                val tailScale = 2.1f
                 val tailWidth = style.tailSize.dp * tailScale
                 val tailHeight = style.tailSize.dp * 1.2f * tailScale
-                val tailOffsetX = if (style.tailStyle == UserBubbleStyle.TailStyle.IMESSAGE) {
-                    style.tailSize.dp * 0.95f
-                } else {
-                    style.tailSize.dp * 0.65f
-                }
-                val tailOffsetY = if (style.tailStyle == UserBubbleStyle.TailStyle.IMESSAGE) {
-                    style.tailSize.dp * 0.18f
-                } else {
-                    style.tailSize.dp * 0.28f
-                }
-                // 不参与父布局测量；只作为贴在气泡右下角的底层图层。
+                val tailOffsetX = style.tailSize.dp * 0.95f
+                val tailOffsetY = style.tailSize.dp * 0.18f
+                // 不参与父布局测量；旧 TRIANGLE 数据不再渲染，避免 Telegram 尾巴残留。
                 Box(modifier = Modifier.matchParentSize()) {
                     Image(
-                        painter = rememberAsyncImagePainter(tailUrl),
+                        painter = rememberAsyncImagePainter(IMESSAGE_TAIL_URL),
                         contentDescription = null,
                         colorFilter = ColorFilter.tint(bg, BlendMode.SrcIn),
                         modifier = Modifier

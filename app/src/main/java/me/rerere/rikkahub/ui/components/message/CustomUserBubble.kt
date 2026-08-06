@@ -149,7 +149,7 @@ fun CustomUserBubble(
             Text(
                 text = timeText,
                 fontSize = style.timeSize.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                color = fg.copy(alpha = 0.4f),
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .padding(bottom = style.marginVertical.dp),

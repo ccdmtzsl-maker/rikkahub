@@ -61,14 +61,15 @@ fun CustomUserBubble(
     }
     val useOutline = style.outlineOffset > 0f && style.borderWidth > 0f
 
+    val tailExtra = if (style.showTail) style.tailSize.dp * 0.4f else 0.dp
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(
                 start = style.marginStart.dp,
-                end = style.marginEnd.dp,
+                end = style.marginEnd.dp + tailExtra,
                 top = style.marginVertical.dp,
-                bottom = style.marginVertical.dp,
+                bottom = style.marginVertical.dp + (if (style.showTail) style.tailSize.dp * 0.6f else 0.dp),
             )
     ) {
         Box(modifier = Modifier.align(Alignment.CenterEnd)) {

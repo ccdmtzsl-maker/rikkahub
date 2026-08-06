@@ -426,7 +426,18 @@ fun SettingDisplayPage(vm: SettingVM = koinViewModel()) {
                                     )) },
                                     label = { Text("水泡") },
                                 )
-                            }
+                                            FilterChip(
+                                selected = s.background == 0xFF007AFFL && s.tailStyle == UserBubbleStyle.TailStyle.IMESSAGE,
+                                onClick = { set(UserBubbleStyle(
+                                    background = 0xFF007AFF, textColor = 0xFFFFFFFF, borderColor = 0xFF007AFF,
+                                    backgroundDark = 0xFF0A84FF, textColorDark = 0xFFFFFFFF, borderColorDark = 0xFF0A84FF,
+                                    cornerRadius = 18f, opacity = 1f, borderWidth = 0f, outlineOffset = 0f,
+                                    paddingStart = 14f, paddingTop = 8f, paddingEnd = 14f, paddingBottom = 8f,
+                                    showTail = true, tailSize = 10f, tailStyle = UserBubbleStyle.TailStyle.IMESSAGE,
+                                )) },
+                                label = { Text("iMessage") },
+                            )
+            }
                             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                             Text("浅色模式", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 16.dp, top = 4.dp))
                             ColorPickerRow("背景", s.background, onValueChange = { set(s.copy(background = it)) })

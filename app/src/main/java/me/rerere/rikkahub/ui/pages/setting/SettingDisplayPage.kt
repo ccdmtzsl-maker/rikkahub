@@ -433,7 +433,7 @@ fun SettingDisplayPage(vm: SettingVM = koinViewModel()) {
                                 onValueChange = { set(s.copy(opacity = it)) },
                                 valueRange = 0.2f..1f,
                                 steps = 15,
-                                valueText = { "${(it * 100).toInt()}%" },
+                                unit = "",
                                 modifier = Modifier.padding(horizontal = 16.dp),
                             )
                             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))

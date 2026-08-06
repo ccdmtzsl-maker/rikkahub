@@ -90,30 +90,30 @@ fun CustomUserBubble(
                 } else null,
                 onClick = { onClick?.invoke() },
             ) {
-                Column(modifier = Modifier.padding(innerPadding)) {
-                    ProvideTextStyle(LocalTextStyle.current.copy(color = fg)) {
-                        content()
-                    }
-                    if (timeText != null && style.timePosition == UserBubbleStyle.TimePosition.BELOW) {
-                        Text(
-                            text = timeText,
-                            fontSize = style.timeSize.sp,
-                            color = fg.copy(alpha = 0.55f),
-                            textAlign = TextAlign.End,
-                            modifier = Modifier.align(Alignment.End).padding(top = 2.dp),
-                        )
-                    }
-                    if (timeText != null && style.timePosition == UserBubbleStyle.TimePosition.INLINE) {
-                        Row(
-                            modifier = Modifier.align(Alignment.End).padding(top = 1.dp),
-                            horizontalArrangement = Arrangement.End,
-                        ) {
+                Box(modifier = Modifier.padding(innerPadding)) {
+                    Column {
+                        ProvideTextStyle(LocalTextStyle.current.copy(color = fg)) {
+                            content()
+                        }
+                        if (timeText != null && style.timePosition == UserBubbleStyle.TimePosition.BELOW) {
                             Text(
                                 text = timeText,
                                 fontSize = style.timeSize.sp,
-                                color = fg.copy(alpha = 0.45f),
+                                color = fg.copy(alpha = 0.55f),
+                                textAlign = TextAlign.End,
+                                modifier = Modifier.align(Alignment.End).padding(top = 2.dp),
                             )
                         }
+                    }
+                    if (timeText != null && style.timePosition == UserBubbleStyle.TimePosition.INLINE) {
+                        Text(
+                            text = "  $timeText",
+                            fontSize = style.timeSize.sp,
+                            color = fg.copy(alpha = 0.45f),
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(bottom = 1.dp, end = 2.dp),
+                        )
                     }
                 }
             }
@@ -147,7 +147,10 @@ fun CustomUserBubble(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .offset(x = tailW * 0.6f, y = -(tailH * 0.05f))
-                        .size(width = tailW * 1.5f, height = tailH * 1.5f),
+                        .size(
+                        width = tailW * (if (style.tailStyle == UserBubbleStyle.TailStyle.IMESSAGE) 1.8f else 2.5f),
+                        height = tailH * (if (style.tailStyle == UserBubbleStyle.TailStyle.IMESSAGE) 1.8f else 2.5f),
+                    ),
                     contentScale = ContentScale.Fit,
                 )
             }

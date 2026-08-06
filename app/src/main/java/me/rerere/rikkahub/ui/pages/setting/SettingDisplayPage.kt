@@ -369,6 +369,7 @@ fun SettingDisplayPage(vm: SettingVM = koinViewModel()) {
                             },
                         )
                         androidx.compose.animation.AnimatedVisibility(visible = displaySetting.enableCustomUserBubble) {
+                        Column {
                             val s = displaySetting.userBubbleStyle
                             val set: (UserBubbleStyle) -> Unit = { ns ->
                                 updateDisplaySetting(displaySetting.copy(userBubbleStyle = ns))
@@ -447,7 +448,8 @@ fun SettingDisplayPage(vm: SettingVM = koinViewModel()) {
                             ColorPickerRow("背景", s.backgroundDark, onValueChange = { set(s.copy(backgroundDark = it)) })
                             ColorPickerRow("文字", s.textColorDark, onValueChange = { set(s.copy(textColorDark = it)) })
                             ColorPickerRow("描边", s.borderColorDark, onValueChange = { set(s.copy(borderColorDark = it)) })
-                        }
+                                                }
+                    }
                     }
                     Column(
                         modifier = Modifier

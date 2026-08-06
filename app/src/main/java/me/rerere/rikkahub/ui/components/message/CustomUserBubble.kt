@@ -1,7 +1,6 @@
 package me.rerere.rikkahub.ui.components.message
 
 import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
@@ -24,8 +23,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
@@ -37,6 +34,7 @@ import me.rerere.rikkahub.data.datastore.UserBubbleStyle
 import coil3.compose.rememberAsyncImagePainter
 
 private const val IMESSAGE_TAIL_URL = "https://imgbed.heliar.top/i/OE0IpZ9UDvkx2caP.webp"
+private const val TELEGRAM_TAIL_URL = "https://imgbed.heliar.top/i/AGUvAR0gG52bKR5Q.webp"
 
 @Composable
 fun CustomUserBubble(
@@ -138,38 +136,20 @@ fun CustomUserBubble(
             if (style.showTail) {
                 val tailW = style.tailSize.dp
                 val tailH = style.tailSize.dp * 1.2f
-                when (style.tailStyle) {
-                    UserBubbleStyle.TailStyle.TRIANGLE -> {
-                        Canvas(
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(bottom = 2.dp)
-                                .size(width = tailW, height = tailH)
-                        ) {
-                            val w = size.width
-                            val h = size.height
-                            val path = Path().apply {
-                                moveTo(0f, 0f)
-                                lineTo(w * 0.8f, h * 0.6f)
-                                lineTo(0f, h * 0.5f)
-                                close()
-                            }
-                            drawPath(path, bg)
-                        }
-                    }
-                    UserBubbleStyle.TailStyle.IMESSAGE -> {
-                        Image(
-                            painter = rememberAsyncImagePainter(IMESSAGE_TAIL_URL),
-                            contentDescription = null,
-                            colorFilter = ColorFilter.tint(bg, BlendMode.SrcIn),
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .offset(x = tailW * 0.5f, y = -(tailH * 0.1f))
-                                .size(width = tailW * 1.5f, height = tailH * 1.5f),
-                            contentScale = ContentScale.Fit,
-                        )
-                    }
+                val tailUrl = when (style.tailStyle) {
+                    UserBubbleStyle.TailStyle.TRIANGLE -> TELEGRAM_TAIL_URL
+                    UserBubbleStyle.TailStyle.IMESSAGE -> IMESSAGE_TAIL_URL
                 }
+                Image(
+                    painter = rememberAsyncImagePainter(tailUrl),
+                    contentDescription = null,
+                    colorFilter = ColorFilter.tint(bg, BlendMode.SrcIn),
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .offset(x = tailW * 0.6f, y = -(tailH * 0.05f))
+                        .size(width = tailW * 1.5f, height = tailH * 1.5f),
+                    contentScale = ContentScale.Fit,
+                )
             }
         }
     }

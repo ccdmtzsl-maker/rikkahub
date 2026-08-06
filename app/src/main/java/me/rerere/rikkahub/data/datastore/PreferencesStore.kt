@@ -527,6 +527,8 @@ data class DisplaySetting(
     val enableAutoScroll: Boolean = true,
     val enableLatexRendering: Boolean = true,
     val enableBlurEffect: Boolean = false,
+    val enableCustomUserBubble: Boolean = false,
+    val userBubbleStyle: UserBubbleStyle = UserBubbleStyle(),
 )
 
 @Serializable

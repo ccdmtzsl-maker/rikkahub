@@ -60,7 +60,7 @@ private const val NINE_PATCH_CROP_LEFT = 0.064f
 private const val NINE_PATCH_CROP_TOP = 0.166f
 private const val NINE_PATCH_CROP_RIGHT = 0.955f
 private const val NINE_PATCH_CROP_BOTTOM = 0.869f
-private const val NINE_PATCH_SOURCE_SCALE = 1.4f
+private const val NINE_PATCH_VISUAL_SCALE = 1.4f
 
 @Composable
 fun CustomUserBubble(
@@ -145,8 +145,8 @@ private fun NinePatchBubble(
     val colorFilter = remember(bg) { ColorFilter.tint(bg, BlendMode.SrcIn) }
 
     // 九宫格源图切割比例
-    val sliceHStart = 0.35f
-    val sliceHEnd = 0.65f
+    val sliceHStart = 0.47f
+    val sliceHEnd = 0.52f
     val sliceVStart = 0.45f
     val sliceVEnd = 0.46f
 
@@ -216,20 +216,12 @@ private fun DrawScope.drawNinePatch(
     val imgH = image.height
 
     // 源图先裁掉透明留白，再在裁后的有效区域里做九宫格切割
-    val baseCropLeft = (imgW * NINE_PATCH_CROP_LEFT).toInt()
-    val baseCropTop = (imgH * NINE_PATCH_CROP_TOP).toInt()
-    val baseCropRight = (imgW * NINE_PATCH_CROP_RIGHT).toInt().coerceAtMost(imgW)
-    val baseCropBottom = (imgH * NINE_PATCH_CROP_BOTTOM).toInt().coerceAtMost(imgH)
-    val baseCropW = (baseCropRight - baseCropLeft).coerceAtLeast(1)
-    val baseCropH = (baseCropBottom - baseCropTop).coerceAtLeast(1)
-
-    // 视觉上先把 URL 源图放大 140%，等价于只取中心 1/1.4 的区域参与九宫格
-    val zoomCropW = (baseCropW / NINE_PATCH_SOURCE_SCALE).roundToInt().coerceAtLeast(1)
-    val zoomCropH = (baseCropH / NINE_PATCH_SOURCE_SCALE).roundToInt().coerceAtLeast(1)
-    val cropLeft = baseCropLeft + ((baseCropW - zoomCropW) / 2)
-    val cropTop = baseCropTop + ((baseCropH - zoomCropH) / 2)
-    val cropW = zoomCropW
-    val cropH = zoomCropH
+    val cropLeft = (imgW * NINE_PATCH_CROP_LEFT).toInt()
+    val cropTop = (imgH * NINE_PATCH_CROP_TOP).toInt()
+    val cropRight = (imgW * NINE_PATCH_CROP_RIGHT).toInt().coerceAtMost(imgW)
+    val cropBottom = (imgH * NINE_PATCH_CROP_BOTTOM).toInt().coerceAtMost(imgH)
+    val cropW = (cropRight - cropLeft).coerceAtLeast(1)
+    val cropH = (cropBottom - cropTop).coerceAtLeast(1)
 
     // 源图切割像素
     val srcLeft = (cropW * sliceHStart).toInt()
@@ -238,10 +230,10 @@ private fun DrawScope.drawNinePatch(
     val srcBottom = (cropH * sliceVEnd).toInt()
 
     // 目标尺寸：角落用固定 dp 值
-    val dstLeftPx = with(density) { NINE_PATCH_LEFT.toPx() }
-    val dstRightPx = with(density) { NINE_PATCH_RIGHT.toPx() }
-    val dstTopPx = with(density) { NINE_PATCH_TOP.toPx() }
-    val dstBottomPx = with(density) { NINE_PATCH_BOTTOM.toPx() }
+    val dstLeftPx = with(density) { NINE_PATCH_LEFT.toPx() * NINE_PATCH_VISUAL_SCALE }
+    val dstRightPx = with(density) { NINE_PATCH_RIGHT.toPx() * NINE_PATCH_VISUAL_SCALE }
+    val dstTopPx = with(density) { NINE_PATCH_TOP.toPx() * NINE_PATCH_VISUAL_SCALE }
+    val dstBottomPx = with(density) { NINE_PATCH_BOTTOM.toPx() * NINE_PATCH_VISUAL_SCALE }
 
     val dstW = dstSize.width
     val dstH = dstSize.height

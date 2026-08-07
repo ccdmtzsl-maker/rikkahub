@@ -82,8 +82,9 @@ fun CustomUserBubble(
                 val tailScale = 2.1f
                 val tailWidth = style.tailSize.dp * tailScale
                 val tailHeight = style.tailSize.dp * 1.2f * tailScale
-                val tailOffsetX = style.tailSize.dp * 0.95f
-                val tailOffsetY = style.tailSize.dp * 0.18f
+                val tailSeam = 2.dp
+                val tailOffsetX = tailWidth - tailSeam
+                val tailOffsetY = tailHeight - style.tailSize.dp * 0.74f
                 // 不参与父布局测量；旧 TRIANGLE 数据不再渲染，避免 Telegram 尾巴残留。
                 Box(modifier = Modifier.matchParentSize()) {
                     Image(

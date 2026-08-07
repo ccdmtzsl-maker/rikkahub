@@ -55,6 +55,12 @@ private val NINE_PATCH_RIGHT = 28.dp
 private val NINE_PATCH_TOP = 20.dp
 private val NINE_PATCH_BOTTOM = 16.dp
 
+// 原图四周有透明留白，绘制九宫格时先裁到有效气泡区域
+private const val NINE_PATCH_CROP_LEFT = 0.052f
+private const val NINE_PATCH_CROP_TOP = 0.166f
+private const val NINE_PATCH_CROP_RIGHT = 0.969f
+private const val NINE_PATCH_CROP_BOTTOM = 0.869f
+
 @Composable
 fun CustomUserBubble(
     style: UserBubbleStyle,
@@ -208,11 +214,19 @@ private fun DrawScope.drawNinePatch(
     val imgW = image.width
     val imgH = image.height
 
+    // 源图先裁掉透明留白，再在裁后的有效区域里做九宫格切割
+    val cropLeft = (imgW * NINE_PATCH_CROP_LEFT).toInt()
+    val cropTop = (imgH * NINE_PATCH_CROP_TOP).toInt()
+    val cropRight = (imgW * NINE_PATCH_CROP_RIGHT).toInt().coerceAtMost(imgW)
+    val cropBottom = (imgH * NINE_PATCH_CROP_BOTTOM).toInt().coerceAtMost(imgH)
+    val cropW = (cropRight - cropLeft).coerceAtLeast(1)
+    val cropH = (cropBottom - cropTop).coerceAtLeast(1)
+
     // 源图切割像素
-    val srcLeft = (imgW * sliceHStart).toInt()
-    val srcRight = (imgW * sliceHEnd).toInt()
-    val srcTop = (imgH * sliceVStart).toInt()
-    val srcBottom = (imgH * sliceVEnd).toInt()
+    val srcLeft = (cropW * sliceHStart).toInt()
+    val srcRight = (cropW * sliceHEnd).toInt()
+    val srcTop = (cropH * sliceVStart).toInt()
+    val srcBottom = (cropH * sliceVEnd).toInt()
 
     // 目标尺寸：角落用固定 dp 值
     val dstLeftPx = with(density) { NINE_PATCH_LEFT.toPx() }
@@ -229,7 +243,7 @@ private fun DrawScope.drawNinePatch(
         if (srcSz.width <= 0 || srcSz.height <= 0 || dstW <= 0f || dstH <= 0f) return
         drawImage(
             image = image,
-            srcOffset = srcOff,
+            srcOffset = IntOffset(cropLeft + srcOff.x, cropTop + srcOff.y),
             srcSize = srcSz,
             dstOffset = IntOffset(dstX.roundToInt(), dstY.roundToInt()),
             dstSize = IntSize(dstW.roundToInt().coerceAtLeast(1), dstH.roundToInt().coerceAtLeast(1)),
@@ -240,15 +254,15 @@ private fun DrawScope.drawNinePatch(
     // Top row
     slice(IntOffset(0, 0), IntSize(srcLeft, srcTop), 0f, 0f, dstLeftPx, dstTopPx)
     slice(IntOffset(srcLeft, 0), IntSize(srcRight - srcLeft, srcTop), dstLeftPx, 0f, dstMiddleW, dstTopPx)
-    slice(IntOffset(srcRight, 0), IntSize(imgW - srcRight, srcTop), dstLeftPx + dstMiddleW, 0f, dstRightPx, dstTopPx)
+    slice(IntOffset(srcRight, 0), IntSize(cropW - srcRight, srcTop), dstLeftPx + dstMiddleW, 0f, dstRightPx, dstTopPx)
     // Middle row
     slice(IntOffset(0, srcTop), IntSize(srcLeft, srcBottom - srcTop), 0f, dstTopPx, dstLeftPx, dstMiddleH)
     slice(IntOffset(srcLeft, srcTop), IntSize(srcRight - srcLeft, srcBottom - srcTop), dstLeftPx, dstTopPx, dstMiddleW, dstMiddleH)
-    slice(IntOffset(srcRight, srcTop), IntSize(imgW - srcRight, srcBottom - srcTop), dstLeftPx + dstMiddleW, dstTopPx, dstRightPx, dstMiddleH)
+    slice(IntOffset(srcRight, srcTop), IntSize(cropW - srcRight, srcBottom - srcTop), dstLeftPx + dstMiddleW, dstTopPx, dstRightPx, dstMiddleH)
     // Bottom row
-    slice(IntOffset(0, srcBottom), IntSize(srcLeft, imgH - srcBottom), 0f, dstTopPx + dstMiddleH, dstLeftPx, dstBottomPx)
-    slice(IntOffset(srcLeft, srcBottom), IntSize(srcRight - srcLeft, imgH - srcBottom), dstLeftPx, dstTopPx + dstMiddleH, dstMiddleW, dstBottomPx)
-    slice(IntOffset(srcRight, srcBottom), IntSize(imgW - srcRight, imgH - srcBottom), dstLeftPx + dstMiddleW, dstTopPx + dstMiddleH, dstRightPx, dstBottomPx)
+    slice(IntOffset(0, srcBottom), IntSize(srcLeft, cropH - srcBottom), 0f, dstTopPx + dstMiddleH, dstLeftPx, dstBottomPx)
+    slice(IntOffset(srcLeft, srcBottom), IntSize(srcRight - srcLeft, cropH - srcBottom), dstLeftPx, dstTopPx + dstMiddleH, dstMiddleW, dstBottomPx)
+    slice(IntOffset(srcRight, srcBottom), IntSize(cropW - srcRight, cropH - srcBottom), dstLeftPx + dstMiddleW, dstTopPx + dstMiddleH, dstRightPx, dstBottomPx)
 }
 
 @Composable

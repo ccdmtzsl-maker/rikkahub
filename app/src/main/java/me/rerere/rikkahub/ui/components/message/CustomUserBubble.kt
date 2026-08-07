@@ -29,9 +29,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Rect
@@ -39,8 +36,6 @@ import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.clipPath
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.unit.IntSize
 import kotlinx.datetime.LocalDateTime
 import me.rerere.rikkahub.data.datastore.UserBubbleStyle
 import coil3.compose.rememberAsyncImagePainter
@@ -78,7 +73,6 @@ fun CustomUserBubble(
         if (style.showTime && createdAt != null) formatBubbleTime(createdAt, style.timeFormat) else null
     }
     val useOutline = style.outlineOffset > 0f && style.borderWidth > 0f
-    var bubbleSize by remember { mutableStateOf(IntSize.Zero) }
 
     Box(
         modifier = Modifier
@@ -98,7 +92,38 @@ fun CustomUserBubble(
                 val tailOffsetX = style.tailSize.dp * 0.95f
                 val tailOffsetY = style.tailSize.dp * 0.18f
                 // 不参与父布局测量；旧 TRIANGLE 数据不再渲染，避免 Telegram 尾巴残留。
-                Box(modifier = Modifier.matchParentSize()) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .drawWithContent {
+                            val seam = 2.dp.toPx()
+                            val radius = minOf(
+                                style.cornerRadius.dp.toPx().coerceAtLeast(0f),
+                                size.width / 2f,
+                                size.height / 2f,
+                            )
+                            val clip = Path().apply {
+                                fillType = PathFillType.EvenOdd
+                                addRect(Rect(0f, 0f, size.width, size.height))
+                                addRoundRect(
+                                    RoundRect(
+                                        left = seam,
+                                        top = seam,
+                                        right = size.width + seam,
+                                        bottom = size.height + seam,
+                                        topLeft = CornerRadius(radius, radius),
+                                        topRight = CornerRadius(radius, radius),
+                                        bottomRight = CornerRadius(radius, radius),
+                                        bottomLeft = CornerRadius(radius, radius),
+                                    )
+                                )
+                            }
+                            val contentDrawScope = this
+                            clipPath(clip) {
+                                contentDrawScope.drawContent()
+                            }
+                        }
+                ) {
                     Image(
                         painter = rememberAsyncImagePainter(IMESSAGE_TAIL_URL),
                         contentDescription = null,
@@ -106,45 +131,13 @@ fun CustomUserBubble(
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
                             .offset(x = tailOffsetX, y = tailOffsetY)
-                            .size(width = tailWidth, height = tailHeight)
-                            .drawWithContent {
-                                val seam = 2.dp.toPx()
-                                val bubbleRight = (size.width - tailOffsetX.toPx()).coerceIn(0f, size.width)
-                                val bubbleBottom = (size.height - tailOffsetY.toPx()).coerceIn(0f, size.height)
-                                val radius = minOf(
-                                    style.cornerRadius.dp.toPx().coerceAtLeast(0f),
-                                    bubbleSize.width / 2f,
-                                    bubbleSize.height / 2f,
-                                )
-                                val clip = Path().apply {
-                                    fillType = PathFillType.EvenOdd
-                                    addRect(Rect(0f, 0f, size.width, size.height))
-                                    addRoundRect(
-                                        RoundRect(
-                                            left = (bubbleRight - bubbleSize.width + seam).coerceAtMost(bubbleRight),
-                                            top = (bubbleBottom - bubbleSize.height + seam).coerceAtMost(bubbleBottom),
-                                            right = bubbleRight + seam,
-                                            bottom = bubbleBottom + seam,
-                                            topLeft = CornerRadius(radius, radius),
-                                            topRight = CornerRadius(radius, radius),
-                                            bottomRight = CornerRadius(radius, radius),
-                                            bottomLeft = CornerRadius(radius, radius),
-                                        )
-                                    )
-                                }
-                                val contentDrawScope = this
-                                clipPath(clip) {
-                                    contentDrawScope.drawContent()
-                                }
-                            },
+                            .size(width = tailWidth, height = tailHeight),
                         contentScale = ContentScale.Fit,
                     )
                 }
             }
             Surface(
-                modifier = Modifier
-                    .onSizeChanged { bubbleSize = it }
-                    .animateContentSize(),
+                modifier = Modifier.animateContentSize(),
                 shape = shape,
                 color = bg,
                 tonalElevation = 0.dp,

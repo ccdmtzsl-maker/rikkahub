@@ -23,7 +23,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
@@ -45,6 +44,7 @@ import coil3.request.SuccessResult
 import coil3.toBitmap
 import kotlinx.datetime.LocalDateTime
 import me.rerere.rikkahub.data.datastore.UserBubbleStyle
+import kotlin.math.roundToInt
 
 private const val IMESSAGE_BUBBLE_URL = "https://imgbed.heliar.top/i/a84EPVMPta7xHRe6.webp"
 
@@ -226,30 +226,30 @@ private fun DrawScope.drawNinePatch(
     val dstMiddleW = (dstW - dstLeftPx - dstRightPx).coerceAtLeast(0f)
     val dstMiddleH = (dstH - dstTopPx - dstBottomPx).coerceAtLeast(0f)
 
-    fun slice(srcOff: IntOffset, srcSz: IntSize, dstOff: Offset, dstSz: Size) {
-        if (srcSz.width <= 0 || srcSz.height <= 0 || dstSz.width <= 0f || dstSz.height <= 0f) return
+    fun slice(srcOff: IntOffset, srcSz: IntSize, dstX: Float, dstY: Float, dstW: Float, dstH: Float) {
+        if (srcSz.width <= 0 || srcSz.height <= 0 || dstW <= 0f || dstH <= 0f) return
         drawImage(
             image = image,
             srcOffset = srcOff,
             srcSize = srcSz,
-            dstOffset = dstOff,
-            dstSize = dstSz,
+            dstOffset = IntOffset(dstX.roundToInt(), dstY.roundToInt()),
+            dstSize = IntSize(dstW.roundToInt().coerceAtLeast(1), dstH.roundToInt().coerceAtLeast(1)),
             colorFilter = colorFilter,
         )
     }
 
     // Top row
-    slice(IntOffset(0, 0), IntSize(srcLeft, srcTop), Offset(0f, 0f), Size(dstLeftPx, dstTopPx))
-    slice(IntOffset(srcLeft, 0), IntSize(srcRight - srcLeft, srcTop), Offset(dstLeftPx, 0f), Size(dstMiddleW, dstTopPx))
-    slice(IntOffset(srcRight, 0), IntSize(imgW - srcRight, srcTop), Offset(dstLeftPx + dstMiddleW, 0f), Size(dstRightPx, dstTopPx))
+    slice(IntOffset(0, 0), IntSize(srcLeft, srcTop), 0f, 0f, dstLeftPx, dstTopPx)
+    slice(IntOffset(srcLeft, 0), IntSize(srcRight - srcLeft, srcTop), dstLeftPx, 0f, dstMiddleW, dstTopPx)
+    slice(IntOffset(srcRight, 0), IntSize(imgW - srcRight, srcTop), dstLeftPx + dstMiddleW, 0f, dstRightPx, dstTopPx)
     // Middle row
-    slice(IntOffset(0, srcTop), IntSize(srcLeft, srcBottom - srcTop), Offset(0f, dstTopPx), Size(dstLeftPx, dstMiddleH))
-    slice(IntOffset(srcLeft, srcTop), IntSize(srcRight - srcLeft, srcBottom - srcTop), Offset(dstLeftPx, dstTopPx), Size(dstMiddleW, dstMiddleH))
-    slice(IntOffset(srcRight, srcTop), IntSize(imgW - srcRight, srcBottom - srcTop), Offset(dstLeftPx + dstMiddleW, dstTopPx), Size(dstRightPx, dstMiddleH))
+    slice(IntOffset(0, srcTop), IntSize(srcLeft, srcBottom - srcTop), 0f, dstTopPx, dstLeftPx, dstMiddleH)
+    slice(IntOffset(srcLeft, srcTop), IntSize(srcRight - srcLeft, srcBottom - srcTop), dstLeftPx, dstTopPx, dstMiddleW, dstMiddleH)
+    slice(IntOffset(srcRight, srcTop), IntSize(imgW - srcRight, srcBottom - srcTop), dstLeftPx + dstMiddleW, dstTopPx, dstRightPx, dstMiddleH)
     // Bottom row
-    slice(IntOffset(0, srcBottom), IntSize(srcLeft, imgH - srcBottom), Offset(0f, dstTopPx + dstMiddleH), Size(dstLeftPx, dstBottomPx))
-    slice(IntOffset(srcLeft, srcBottom), IntSize(srcRight - srcLeft, imgH - srcBottom), Offset(dstLeftPx, dstTopPx + dstMiddleH), Size(dstMiddleW, dstBottomPx))
-    slice(IntOffset(srcRight, srcBottom), IntSize(imgW - srcRight, imgH - srcBottom), Offset(dstLeftPx + dstMiddleW, dstTopPx + dstMiddleH), Size(dstRightPx, dstBottomPx))
+    slice(IntOffset(0, srcBottom), IntSize(srcLeft, imgH - srcBottom), 0f, dstTopPx + dstMiddleH, dstLeftPx, dstBottomPx)
+    slice(IntOffset(srcLeft, srcBottom), IntSize(srcRight - srcLeft, imgH - srcBottom), dstLeftPx, dstTopPx + dstMiddleH, dstMiddleW, dstBottomPx)
+    slice(IntOffset(srcRight, srcBottom), IntSize(imgW - srcRight, imgH - srcBottom), dstLeftPx + dstMiddleW, dstTopPx + dstMiddleH, dstRightPx, dstBottomPx)
 }
 
 @Composable

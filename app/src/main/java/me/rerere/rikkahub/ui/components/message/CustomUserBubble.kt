@@ -102,10 +102,12 @@ fun CustomUserBubble(
                                 size.width / 2f,
                                 size.height / 2f,
                             )
-                            // EvenOdd: 全画布减去气泡内缩区域 → 只保留气泡外部+边缘2dp接缝
+                            // 外圈要覆盖尾巴 offset 出去的区域
+                            val overflow = tailOffsetX.toPx() + tailWidth.toPx()
+                            // EvenOdd: 扩大外圈覆盖尾巴偏移区域，减去气泡内缩区域
                             val clip = Path().apply {
                                 fillType = PathFillType.EvenOdd
-                                addRect(Rect(0f, 0f, size.width, size.height))
+                                addRect(Rect(-overflow, -overflow, size.width + overflow, size.height + overflow))
                                 addRoundRect(
                                     RoundRect(
                                         left = seam,

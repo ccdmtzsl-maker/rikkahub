@@ -29,13 +29,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.RoundRect
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PathFillType
-import androidx.compose.ui.graphics.drawscope.clipPath
 import kotlinx.datetime.LocalDateTime
 import me.rerere.rikkahub.data.datastore.UserBubbleStyle
 import coil3.compose.rememberAsyncImagePainter
@@ -92,41 +85,7 @@ fun CustomUserBubble(
                 val tailOffsetX = style.tailSize.dp * 0.95f
                 val tailOffsetY = style.tailSize.dp * 0.18f
                 // 不参与父布局测量；旧 TRIANGLE 数据不再渲染，避免 Telegram 尾巴残留。
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .drawWithContent {
-                            val seam = 2.dp.toPx()
-                            val radius = minOf(
-                                style.cornerRadius.dp.toPx().coerceAtLeast(0f),
-                                size.width / 2f,
-                                size.height / 2f,
-                            )
-                            // 外圈要覆盖尾巴 offset 出去的区域
-                            val overflow = tailOffsetX.toPx() + tailWidth.toPx()
-                            // EvenOdd: 扩大外圈覆盖尾巴偏移区域，减去气泡内缩区域
-                            val clip = Path().apply {
-                                fillType = PathFillType.EvenOdd
-                                addRect(Rect(-overflow, -overflow, size.width + overflow, size.height + overflow))
-                                addRoundRect(
-                                    RoundRect(
-                                        left = seam,
-                                        top = seam,
-                                        right = size.width - seam,
-                                        bottom = size.height - seam,
-                                        topLeft = CornerRadius(radius, radius),
-                                        topRight = CornerRadius(radius, radius),
-                                        bottomRight = CornerRadius(radius, radius),
-                                        bottomLeft = CornerRadius(radius, radius),
-                                    )
-                                )
-                            }
-                            val contentDrawScope = this
-                            clipPath(clip) {
-                                contentDrawScope.drawContent()
-                            }
-                        }
-                ) {
+                Box(modifier = Modifier.matchParentSize()) {
                     Image(
                         painter = rememberAsyncImagePainter(IMESSAGE_TAIL_URL),
                         contentDescription = null,

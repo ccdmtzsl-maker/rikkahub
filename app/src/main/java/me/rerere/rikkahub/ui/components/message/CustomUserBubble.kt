@@ -102,6 +102,7 @@ fun CustomUserBubble(
                                 size.width / 2f,
                                 size.height / 2f,
                             )
+                            // EvenOdd: 全画布减去气泡内缩区域 → 只保留气泡外部+边缘2dp接缝
                             val clip = Path().apply {
                                 fillType = PathFillType.EvenOdd
                                 addRect(Rect(0f, 0f, size.width, size.height))
@@ -109,8 +110,8 @@ fun CustomUserBubble(
                                     RoundRect(
                                         left = seam,
                                         top = seam,
-                                        right = size.width + seam,
-                                        bottom = size.height + seam,
+                                        right = size.width - seam,
+                                        bottom = size.height - seam,
                                         topLeft = CornerRadius(radius, radius),
                                         topRight = CornerRadius(radius, radius),
                                         bottomRight = CornerRadius(radius, radius),
@@ -118,9 +119,8 @@ fun CustomUserBubble(
                                     )
                                 )
                             }
-                            val contentDrawScope = this
                             clipPath(clip) {
-                                contentDrawScope.drawContent()
+                                this@drawWithContent.drawContent()
                             }
                         }
                 ) {

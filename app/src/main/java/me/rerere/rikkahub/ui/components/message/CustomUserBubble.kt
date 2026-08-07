@@ -56,9 +56,9 @@ private val NINE_PATCH_TOP = 20.dp
 private val NINE_PATCH_BOTTOM = 16.dp
 
 // 原图四周有透明留白，绘制九宫格时先裁到有效气泡区域
-private const val NINE_PATCH_CROP_LEFT = 0.052f
+private const val NINE_PATCH_CROP_LEFT = 0.064f
 private const val NINE_PATCH_CROP_TOP = 0.166f
-private const val NINE_PATCH_CROP_RIGHT = 0.969f
+private const val NINE_PATCH_CROP_RIGHT = 0.955f
 private const val NINE_PATCH_CROP_BOTTOM = 0.869f
 
 @Composable

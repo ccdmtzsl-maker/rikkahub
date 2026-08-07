@@ -35,7 +35,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathFillType
-import androidx.compose.ui.graphics.clipPath
+import androidx.compose.ui.graphics.drawscope.clipPath
 import kotlinx.datetime.LocalDateTime
 import me.rerere.rikkahub.data.datastore.UserBubbleStyle
 import coil3.compose.rememberAsyncImagePainter
@@ -121,8 +121,9 @@ fun CustomUserBubble(
                                     )
                                 )
                             }
+                            val contentDrawScope = this
                             clipPath(clip) {
-                                this@drawWithContent.drawContent()
+                                contentDrawScope.drawContent()
                             }
                         }
                 ) {

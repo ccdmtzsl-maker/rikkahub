@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.ProvideTextStyle
@@ -153,6 +154,7 @@ private fun NinePatchBubble(
         Box(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
+                .widthIn(max = 320.dp)
                 .drawBehind {
                     val img = bitmap ?: return@drawBehind
                     drawNinePatch(

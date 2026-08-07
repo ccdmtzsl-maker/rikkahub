@@ -50,10 +50,10 @@ import kotlin.math.roundToInt
 private const val IMESSAGE_BUBBLE_URL = "https://imgbed.heliar.top/i/a84EPVMPta7xHRe6.webp"
 
 // 九宫格固定边距（dp），角落区域不拉伸
-private val NINE_PATCH_LEFT = 18.dp
-private val NINE_PATCH_RIGHT = 23.dp
-private val NINE_PATCH_TOP = 18.dp
-private val NINE_PATCH_BOTTOM = 22.dp
+private val NINE_PATCH_LEFT = 20.dp
+private val NINE_PATCH_RIGHT = 28.dp
+private val NINE_PATCH_TOP = 20.dp
+private val NINE_PATCH_BOTTOM = 16.dp
 
 @Composable
 fun CustomUserBubble(
@@ -92,6 +92,7 @@ fun CustomUserBubble(
         NinePatchBubble(
             bg = bg,
             fg = fg,
+            innerPadding = innerPadding,
             style = style,
             timeText = timeText,
             onClick = onClick,
@@ -117,6 +118,7 @@ fun CustomUserBubble(
 private fun NinePatchBubble(
     bg: Color,
     fg: Color,
+    innerPadding: PaddingValues,
     style: UserBubbleStyle,
     timeText: String?,
     onClick: (() -> Unit)?,
@@ -168,12 +170,7 @@ private fun NinePatchBubble(
                         colorFilter = colorFilter,
                     )
                 }
-                .padding(
-                    start = NINE_PATCH_LEFT,
-                    top = NINE_PATCH_TOP,
-                    end = NINE_PATCH_RIGHT,
-                    bottom = NINE_PATCH_BOTTOM,
-                )
+                .padding(innerPadding)
                 .animateContentSize()
         ) {
             Column {

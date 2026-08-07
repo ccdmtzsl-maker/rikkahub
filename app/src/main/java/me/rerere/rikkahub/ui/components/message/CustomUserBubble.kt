@@ -145,8 +145,8 @@ private fun NinePatchBubble(
     val colorFilter = remember(bg) { ColorFilter.tint(bg, BlendMode.SrcIn) }
 
     // 九宫格源图切割比例
-    val sliceHStart = 0.47f
-    val sliceHEnd = 0.52f
+    val sliceHStart = 0.20f
+    val sliceHEnd = 0.87f
     val sliceVStart = 0.45f
     val sliceVEnd = 0.46f
 

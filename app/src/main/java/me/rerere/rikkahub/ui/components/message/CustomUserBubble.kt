@@ -32,7 +32,9 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -45,6 +47,12 @@ import kotlinx.datetime.LocalDateTime
 import me.rerere.rikkahub.data.datastore.UserBubbleStyle
 
 private const val IMESSAGE_BUBBLE_URL = "https://imgbed.heliar.top/i/a84EPVMPta7xHRe6.webp"
+
+// 九宫格固定边距（dp），角落区域不拉伸
+private val NINE_PATCH_LEFT = 18.dp
+private val NINE_PATCH_RIGHT = 23.dp
+private val NINE_PATCH_TOP = 18.dp
+private val NINE_PATCH_BOTTOM = 22.dp
 
 @Composable
 fun CustomUserBubble(
@@ -114,6 +122,7 @@ private fun NinePatchBubble(
     content: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
+    val density = LocalDensity.current
     var bitmap by remember { mutableStateOf<ImageBitmap?>(null) }
     LaunchedEffect(Unit) {
         val loader = ImageLoader(context)
@@ -124,6 +133,12 @@ private fun NinePatchBubble(
         }
     }
     val colorFilter = remember(bg) { ColorFilter.tint(bg, BlendMode.SrcIn) }
+
+    // 九宫格源图切割比例
+    val sliceHStart = 0.20f
+    val sliceHEnd = 0.87f
+    val sliceVStart = 0.45f
+    val sliceVEnd = 0.46f
 
     Box(
         modifier = Modifier
@@ -143,18 +158,19 @@ private fun NinePatchBubble(
                     drawNinePatch(
                         image = img,
                         dstSize = size,
-                        sliceHStart = 0.20f,
-                        sliceHEnd = 0.87f,
-                        sliceVStart = 0.45f,
-                        sliceVEnd = 0.46f,
+                        density = density,
+                        sliceHStart = sliceHStart,
+                        sliceHEnd = sliceHEnd,
+                        sliceVStart = sliceVStart,
+                        sliceVEnd = sliceVEnd,
                         colorFilter = colorFilter,
                     )
                 }
                 .padding(
-                    start = 18.dp,
-                    top = style.paddingTop.dp,
-                    end = 23.dp,
-                    bottom = style.paddingBottom.dp,
+                    start = NINE_PATCH_LEFT,
+                    top = NINE_PATCH_TOP,
+                    end = NINE_PATCH_RIGHT,
+                    bottom = NINE_PATCH_BOTTOM,
                 )
                 .animateContentSize()
         ) {
@@ -176,9 +192,14 @@ private fun NinePatchBubble(
     }
 }
 
+/**
+ * 九宫格绘制：四角保持固定 dp 尺寸不变形，中间区域拉伸填充。
+ * sliceH/V 定义源图中"可拉伸区域"的起止比例。
+ */
 private fun DrawScope.drawNinePatch(
     image: ImageBitmap,
     dstSize: Size,
+    density: Density,
     sliceHStart: Float,
     sliceHEnd: Float,
     sliceVStart: Float,
@@ -187,21 +208,24 @@ private fun DrawScope.drawNinePatch(
 ) {
     val imgW = image.width
     val imgH = image.height
+
+    // 源图切割像素
     val srcLeft = (imgW * sliceHStart).toInt()
     val srcRight = (imgW * sliceHEnd).toInt()
     val srcTop = (imgH * sliceVStart).toInt()
     val srcBottom = (imgH * sliceVEnd).toInt()
 
+    // 目标尺寸：角落用固定 dp 值
+    val dstLeftPx = with(density) { NINE_PATCH_LEFT.toPx() }
+    val dstRightPx = with(density) { NINE_PATCH_RIGHT.toPx() }
+    val dstTopPx = with(density) { NINE_PATCH_TOP.toPx() }
+    val dstBottomPx = with(density) { NINE_PATCH_BOTTOM.toPx() }
+
     val dstW = dstSize.width
     val dstH = dstSize.height
-    val dstLeft = srcLeft.toFloat()
-    val dstRight = (imgW - srcRight).toFloat()
-    val dstTop = srcTop.toFloat()
-    val dstBottom = (imgH - srcBottom).toFloat()
-    val dstMiddleW = (dstW - dstLeft - dstRight).coerceAtLeast(0f)
-    val dstMiddleH = (dstH - dstTop - dstBottom).coerceAtLeast(0f)
+    val dstMiddleW = (dstW - dstLeftPx - dstRightPx).coerceAtLeast(0f)
+    val dstMiddleH = (dstH - dstTopPx - dstBottomPx).coerceAtLeast(0f)
 
-    // 9 slices: TL, TC, TR, ML, MC, MR, BL, BC, BR
     fun slice(srcOff: IntOffset, srcSz: IntSize, dstOff: Offset, dstSz: Size) {
         if (srcSz.width <= 0 || srcSz.height <= 0 || dstSz.width <= 0f || dstSz.height <= 0f) return
         drawImage(
@@ -213,18 +237,19 @@ private fun DrawScope.drawNinePatch(
             colorFilter = colorFilter,
         )
     }
+
     // Top row
-    slice(IntOffset(0, 0), IntSize(srcLeft, srcTop), Offset(0f, 0f), Size(dstLeft, dstTop))
-    slice(IntOffset(srcLeft, 0), IntSize(srcRight - srcLeft, srcTop), Offset(dstLeft, 0f), Size(dstMiddleW, dstTop))
-    slice(IntOffset(srcRight, 0), IntSize(imgW - srcRight, srcTop), Offset(dstLeft + dstMiddleW, 0f), Size(dstRight, dstTop))
+    slice(IntOffset(0, 0), IntSize(srcLeft, srcTop), Offset(0f, 0f), Size(dstLeftPx, dstTopPx))
+    slice(IntOffset(srcLeft, 0), IntSize(srcRight - srcLeft, srcTop), Offset(dstLeftPx, 0f), Size(dstMiddleW, dstTopPx))
+    slice(IntOffset(srcRight, 0), IntSize(imgW - srcRight, srcTop), Offset(dstLeftPx + dstMiddleW, 0f), Size(dstRightPx, dstTopPx))
     // Middle row
-    slice(IntOffset(0, srcTop), IntSize(srcLeft, srcBottom - srcTop), Offset(0f, dstTop), Size(dstLeft, dstMiddleH))
-    slice(IntOffset(srcLeft, srcTop), IntSize(srcRight - srcLeft, srcBottom - srcTop), Offset(dstLeft, dstTop), Size(dstMiddleW, dstMiddleH))
-    slice(IntOffset(srcRight, srcTop), IntSize(imgW - srcRight, srcBottom - srcTop), Offset(dstLeft + dstMiddleW, dstTop), Size(dstRight, dstMiddleH))
+    slice(IntOffset(0, srcTop), IntSize(srcLeft, srcBottom - srcTop), Offset(0f, dstTopPx), Size(dstLeftPx, dstMiddleH))
+    slice(IntOffset(srcLeft, srcTop), IntSize(srcRight - srcLeft, srcBottom - srcTop), Offset(dstLeftPx, dstTopPx), Size(dstMiddleW, dstMiddleH))
+    slice(IntOffset(srcRight, srcTop), IntSize(imgW - srcRight, srcBottom - srcTop), Offset(dstLeftPx + dstMiddleW, dstTopPx), Size(dstRightPx, dstMiddleH))
     // Bottom row
-    slice(IntOffset(0, srcBottom), IntSize(srcLeft, imgH - srcBottom), Offset(0f, dstTop + dstMiddleH), Size(dstLeft, dstBottom))
-    slice(IntOffset(srcLeft, srcBottom), IntSize(srcRight - srcLeft, imgH - srcBottom), Offset(dstLeft, dstTop + dstMiddleH), Size(dstMiddleW, dstBottom))
-    slice(IntOffset(srcRight, srcBottom), IntSize(imgW - srcRight, imgH - srcBottom), Offset(dstLeft + dstMiddleW, dstTop + dstMiddleH), Size(dstRight, dstBottom))
+    slice(IntOffset(0, srcBottom), IntSize(srcLeft, imgH - srcBottom), Offset(0f, dstTopPx + dstMiddleH), Size(dstLeftPx, dstBottomPx))
+    slice(IntOffset(srcLeft, srcBottom), IntSize(srcRight - srcLeft, imgH - srcBottom), Offset(dstLeftPx, dstTopPx + dstMiddleH), Size(dstMiddleW, dstBottomPx))
+    slice(IntOffset(srcRight, srcBottom), IntSize(imgW - srcRight, imgH - srcBottom), Offset(dstLeftPx + dstMiddleW, dstTopPx + dstMiddleH), Size(dstRightPx, dstBottomPx))
 }
 
 @Composable

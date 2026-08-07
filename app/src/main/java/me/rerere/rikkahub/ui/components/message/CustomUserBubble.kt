@@ -29,6 +29,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathFillType
+import androidx.compose.ui.graphics.clipPath
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.IntSize
 import kotlinx.datetime.LocalDateTime
 import me.rerere.rikkahub.data.datastore.UserBubbleStyle
 import coil3.compose.rememberAsyncImagePainter
@@ -66,6 +78,7 @@ fun CustomUserBubble(
         if (style.showTime && createdAt != null) formatBubbleTime(createdAt, style.timeFormat) else null
     }
     val useOutline = style.outlineOffset > 0f && style.borderWidth > 0f
+    var bubbleSize by remember { mutableStateOf(IntSize.Zero) }
 
     Box(
         modifier = Modifier
@@ -93,13 +106,45 @@ fun CustomUserBubble(
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
                             .offset(x = tailOffsetX, y = tailOffsetY)
-                            .size(width = tailWidth, height = tailHeight),
+                            .size(width = tailWidth, height = tailHeight)
+                            .drawWithContent {
+                                val seam = 2.dp.toPx()
+                                val bubbleRight = (size.width - tailOffsetX.toPx()).coerceIn(0f, size.width)
+                                val bubbleBottom = (size.height - tailOffsetY.toPx()).coerceIn(0f, size.height)
+                                val radius = minOf(
+                                    style.cornerRadius.dp.toPx().coerceAtLeast(0f),
+                                    bubbleSize.width / 2f,
+                                    bubbleSize.height / 2f,
+                                )
+                                val clip = Path().apply {
+                                    fillType = PathFillType.EvenOdd
+                                    addRect(Rect(0f, 0f, size.width, size.height))
+                                    addRoundRect(
+                                        RoundRect(
+                                            left = (bubbleRight - bubbleSize.width + seam).coerceAtMost(bubbleRight),
+                                            top = (bubbleBottom - bubbleSize.height + seam).coerceAtMost(bubbleBottom),
+                                            right = bubbleRight + seam,
+                                            bottom = bubbleBottom + seam,
+                                            topLeft = CornerRadius(radius, radius),
+                                            topRight = CornerRadius(radius, radius),
+                                            bottomRight = CornerRadius(radius, radius),
+                                            bottomLeft = CornerRadius(radius, radius),
+                                        )
+                                    )
+                                }
+                                val contentDrawScope = this
+                                clipPath(clip) {
+                                    contentDrawScope.drawContent()
+                                }
+                            },
                         contentScale = ContentScale.Fit,
                     )
                 }
             }
             Surface(
-                modifier = Modifier.animateContentSize(),
+                modifier = Modifier
+                    .onSizeChanged { bubbleSize = it }
+                    .animateContentSize(),
                 shape = shape,
                 color = bg,
                 tonalElevation = 0.dp,
